@@ -12,117 +12,68 @@
         .example { background: #e8e8e8; padding: 15px; border-left: 4px solid #ff5e5e; margin: 10px 0; border-radius: 4px; font-family: 'Courier New', Courier, monospace; white-space: pre-wrap; }
         ul { background: #fff; padding: 20px 40px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         li { margin-bottom: 15px; }
-        .special-keys { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-top: 20px; }
     </style>
 </head>
 <body>
 
-    <h1>E# Language Reference</h1>
-    <p>Welcome to the complete documentation for E# (English Sharp) Game Engine Edition! E# reads just like a book.</p>
+    <h1>E# Language Reference (Engine Edition)</h1>
+    <p>Welcome to the complete documentation for E# (English Sharp) Game Engine Edition! Build 2D worlds simply by typing.</p>
 
-    <h2>1. Variables & Math</h2>
+    <h2>1. Variables & Objects</h2>
     <ul>
-        <li><strong>Create a Variable:</strong> <code>set [number|string|boolean] [name] to [value]</code>
-            <div class="example">set number score to 0
-set string playerName to "Hero"
-set boolean isRunning to true</div>
-        </li>
-        <li><strong>Random Numbers:</strong> <code>set number [name] to random between [min] and [max]</code></li>
-        <li><strong>Combine Strings:</strong> <code>combine [value1] and [value2] into [newName]</code>
-            <div class="example">combine "Score: " and score into scoreText</div>
-        </li>
-        <li><strong>Math:</strong> <code>add [number] to [variable]</code> or <code>subtract [number] from [variable]</code></li>
-    </ul>
-
-    <h2>2. Game Objects & Physics</h2>
-    <ul>
+        <li><strong>Create a Variable:</strong> <code>set [number|string|boolean] [name] to [value]</code></li>
         <li><strong>Create Object:</strong> <code>set object [name] to [sprite] at x [num] y [num]</code>
-            <div class="example">set object player to "🚀" at x 150 y 150</div>
+            <div class="example">set object player to "👽" at x 150 y 150</div>
         </li>
-        <li><strong>Draw Object:</strong> <code>draw object [name]</code></li>
+    </ul>
+
+    <h2>2. Movement & Graphics</h2>
+    <ul>
         <li><strong>Move Object Coordinates:</strong> <code>add [num] to [object]'s x</code> (or y)</li>
-        <li><strong>Enemy Tracking (AI):</strong> <code>move [object1] towards [object2] by [speed]</code>
-            <div class="example">move enemy towards player by 2</div>
-        </li>
-        <li><strong>Collision Detection:</strong> <code>if [object1] is touching [object2]</code>
-            <div class="example">if player is touching enemy
-    print "You died!"
-end if</div>
-        </li>
-    </ul>
-
-    <h2>3. Tilemaps & Levels</h2>
-    <ul>
-        <li><strong>Create a Tilemap:</strong> Define a grid of emojis to act as your game background or level.
-            <div class="example">create tilemap myLevel
-    "🟫🟫🟫🟫🟫"
-    "🟫🟩🟩🟩🟫"
-    "🟫🟫🟫🟫🟫"
-end tilemap</div>
-        </li>
-        <li><strong>Draw Tilemap:</strong> <code>draw tilemap [name] at x [num] y [num]</code>
-            <div class="example">draw tilemap myLevel at x 0 y 25</div>
-        </li>
-    </ul>
-
-    <h2>4. Audio & Sound Effects</h2>
-    <ul>
-        <li><strong>Play a Sound:</strong> <code>play sound "[url]"</code>
-            <div class="example">play sound "https://mywebsite.com/jump.mp3"</div>
-        </li>
-    </ul>
-
-    <h2>5. Graphics & UI</h2>
-    <ul>
-        <li><strong>Draw Sprite (No Object):</strong> <code>draw sprite [text/emoji] at x [num] y [num]</code></li>
-        <li><strong>Draw Text:</strong> <code>draw text [string/variable] at x [num] y [num]</code>
-            <div class="example">draw text "Level 1" at x 10 y 30</div>
-        </li>
+        <li><strong>Enemy Tracking (AI):</strong> <code>move [object1] towards [object2] by [speed]</code></li>
+        <li><strong>Draw Object:</strong> <code>draw object [name]</code></li>
+        <li><strong>Draw Text:</strong> <code>draw text [string] at x [num] y [num]</code></li>
         <li><strong>Clear Screen:</strong> <code>clear canvas</code></li>
     </ul>
 
-    <h2>6. Input & Control</h2>
+    <h2>3. Tilemaps & Visual Editor</h2>
     <ul>
-        <li><strong>Check Keys (Real-time):</strong> <code>if you pressed "[key]"</code>
-            <div class="example">if you pressed "arrow up"
-    subtract 5 from player's y
+        <li><strong>Create a Tilemap:</strong> Define a grid of emojis to act as your game background or level. (Or use the built-in Map Editor Tab to do this for you!)
+            <div class="example">create tilemap myLevel
+    "🟥🟥🟥"
+    "🟥🟩🟥"
+    "🟥🟥🟥"
+end tilemap</div>
+        </li>
+        <li><strong>Draw Tilemap:</strong> <code>draw tilemap [name] at x [num] y [num]</code><br>
+        <em>Note: Always draw your tilemap before your objects so your character stands on top of the map!</em></li>
+    </ul>
+
+    <h2>4. Game Physics & Map Collisions</h2>
+    <ul>
+        <li><strong>Object vs Object:</strong> <code>if [object1] is touching [object2]</code></li>
+        <li><strong>Object vs Wall (Tilemap Physics):</strong> To make a tile "solid", check if the player hit it immediately after moving. If they did, undo the movement!
+            <div class="example">if you pressed "arrow right"
+    add 5 to player's x
+    if player is touching tile "🟥" in myLevel
+        subtract 5 from player's x
+    end if
 end if</div>
         </li>
-        <li><strong>Terminal Input (Pause):</strong> <code>ask user for [string|number] [name] with "[prompt]"</code></li>
     </ul>
 
-    <div class="special-keys">
-        <strong>Special Key Mappings:</strong><br>
-        Use these names inside your quotes for keyboard inputs:<br>
-        <code>"arrow up"</code>, <code>"arrow down"</code>, <code>"arrow left"</code>, <code>"arrow right"</code>, <code>"space"</code>, <code>"w"</code>, <code>"a"</code>, <code>"s"</code>, <code>"d"</code>, and numbers <code>"1"</code>, <code>"2"</code>, etc.
-    </div>
-
-    <h2>7. Logic & Loops</h2>
+    <h2>5. Audio & Control</h2>
     <ul>
-        <li><strong>If Statements:</strong> <code>if [value] is [equal to|greater than|less than] [value]</code></li>
-        <li><strong>Boolean Checks:</strong> <code>if [variable] is [true|false]</code></li>
+        <li><strong>Play a Sound:</strong> <code>play sound "[url]"</code></li>
+        <li><strong>Check Keys:</strong> <code>if you pressed "[key]"</code> (Supports: <code>"arrow up"</code>, <code>"arrow down"</code>, <code>"arrow left"</code>, <code>"arrow right"</code>, <code>"space"</code>, letters, and numbers).</li>
+    </ul>
+
+    <h2>6. Logic & Loops</h2>
+    <ul>
         <li><strong>While Loops:</strong> <code>while [variable] is [true|false]</code><br>
-            <em>Note: Don't forget to put <code>wait 30 milliseconds</code> inside your game loops so the browser doesn't freeze!</em>
+            <em>Note: Always put <code>wait 30 milliseconds</code> inside your game loops so the browser doesn't freeze!</em>
         </li>
-        <li><em>Always close logic blocks with <code>end if</code> or <code>end while</code>!</em></li>
-    </ul>
-
-    <h2>8. Functions</h2>
-    <ul>
-        <li><strong>Define a Function:</strong> Wraps code so it can be reused later.
-            <div class="example">create function movePlayer
-    add 5 to player's x
-end function</div>
-        </li>
-        <li><strong>Execute a Function:</strong> <code>run [functionName]</code></li>
-    </ul>
-
-    <h2>9. Utilities</h2>
-    <ul>
-        <li><strong>Timers:</strong> <code>wait [num] seconds</code> or <code>wait [num] milliseconds</code></li>
-        <li><strong>Printing:</strong> <code>print [text or variable]</code></li>
-        <li><strong>Clearing Terminal:</strong> <code>clear terminal</code></li>
-        <li><strong>Quit:</strong> <code>end program</code></li>
+        <li><strong>Functions:</strong> Wraps code so it can be reused. Use <code>create function [name]</code>, and trigger it with <code>run [name]</code>.</li>
     </ul>
 
 </body>
