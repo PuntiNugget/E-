@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E# Language Playground - Pro</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { margin: 0; padding: 20px; background-color: #1e1e1e; color: #fff; display: flex; flex-direction: column; height: 100vh; }
+        h1 { margin-top: 0; color: #9cdcfe; }
+        .container { display: flex; gap: 20px; flex: 1; min-height: 0; }
+        .panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
+        .panel-header { background: #3c3c3c; padding: 10px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        textarea { flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 15px; resize: none; outline: none; }
+        #console { flex: 1; padding: 15px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; white-space: pre-wrap; }
+        button { background: #9cdcfe; color: #000; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #6cb6ff; }
+        .error { color: #ff7b72; }
+        .success { color: #7ee787; }
+    </style>
+</head>
+<body>
+
+    <h1>E# Playground</h1>
+    <p>C# features added: Strong types (number, string, boolean), While Loops, and If statements!</p>
+
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">
+                <span>Program.e#</span>
+                <button onclick="runESharp()">Run Program</button>
+            </div>
+            <textarea id="editor" spellcheck="false">
+// This is an E# program that counts down
+set number counter to 3
+set string message to "Liftoff!"
+set boolean isReady to true
+
+if isReady is equal to true
+    print "Initiating launch sequence..."
+    
+    while counter is greater than 0
+        print counter
+        subtract 1 from counter
+    end while
+    
+    print message
+end if
+            </textarea>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">Terminal</div>
+            <div id="console"></div>
+        </div>
+    </div>
+
+    <script>
+        function runESharp() {
+            const code = document.getElementById('editor').value;
+            const consoleOut = document.getElementById('console');
+            consoleOut.innerHTML = '';
+            
+            let variables = {};
+            let lines = code.split('\n');
+            let ip = 0; // Instruction Pointer
+            let loopStack = [];
+
+            function print(text, isError = false) {
+                const span = document.createElement('div');
+                span.textContent = text;
+                if (isError) span.className = 'error';
+                consoleOut.appendChild(span);
+            }
+
+            // Helper to get raw values or read from variables
+            function getValue(valStr) {
+                valStr = valStr.trim();
+                if (valStr === "true") return true;
+                if (valStr === "false") return false;
+                if (!isNaN(valStr)) return Number(valStr);
+                if (valStr.startsWith('"') && valStr.endsWith('"')) return valStr.substring(1, valStr.length - 1);
+                if (variables[valStr] !== undefined) return variables[valStr].value;
+                throw new Error(`Unknown variable or value: '${valStr}'`);
+            }
+
+            try {
+                print("--- Program Started ---", false);
+                document.lastChild.className = "success";
+
+                while (ip < lines.length) {
+                    let line = lines[ip].trim();
+                    
+                    // Skip empty lines and comments
+                    if (!line || line.startsWith('//')) { ip++; continue; }
+
+                    // 1. C# Style Variable Creation (Strongly Typed)
+                    let setMatch = line.match(/^set (number|string|boolean) (\w+) to (.+)$/);
+                    if (setMatch) {
+                        let type = setMatch[1];
+                        let name = setMatch[2];
+                        let val = getValue(setMatch[3]);
+                        
+                        // Type checking like C#
+                        if (type === 'number' && typeof val !== 'number') throw new Error(`Type mismatch: '${name}' must be a number.`);
+                        if (type === 'string' && typeof val !== 'string') throw new Error(`Type mismatch: '${name}' must be a string.`);
+                        if (type === 'boolean' && typeof val !== 'boolean') throw new Error(`Type mismatch: '${name}' must be a boolean.`);
+                        
+                        variables[name] = { type, value: val };
+                        ip++; continue;
+                    }
+
+                    // 2. Variable reassignment
+                    let changeMatch = line.match(/^change (\w+) to (.+)$/);
+                    if (changeMatch) {
+                        let name = changeMatch[1];
+                        if (!variables[name]) throw new Error(`Variable '${name}' does not exist.`);
+                        let val = getValue(changeMatch[2]);
+                        variables[name].value = val; // Assuming same type for simplicity
+                        ip++; continue;
+                    }
+
+                    // 3. Print
+                    if (line.startsWith('print ')) {
+                        print(getValue(line.substring(6)));
+                        ip++; continue;
+                    }
+
+                    // 4. Math
+                    let addMatch = line.match(/^add (.+) to (\w+)$/);
+                    if (addMatch) {
+                        variables[addMatch[2]].value += getValue(addMatch[1]);
+                        ip++; continue;
+                    }
+                    let subMatch = line.match(/^subtract (.+) from (\w+)$/);
+                    if (subMatch) {
+                        variables[subMatch[2]].value -= getValue(subMatch[1]);
+                        ip++; continue;
+                    }
+
+                    // 5. IF statements
+                    let ifMatch = line.match(/^if (.+) is (equal to|greater than|less than) (.+)$/);
+                    if (ifMatch) {
+                        let v1 = getValue(ifMatch[1]);
+                        let op = ifMatch[2];
+                        let v2 = getValue(ifMatch[3]);
+                        
+                        let isTrue = false;
+                        if (op === "equal to") isTrue = v1 === v2;
+                        if (op === "greater than") isTrue = v1 > v2;
+                        if (op === "less than") isTrue = v1 < v2;
+
+                        if (!isTrue) {
+                            // Skip forward to 'end if'
+                            let depth = 1;
+                            while (depth > 0) {
+                                ip++;
+                                if (ip >= lines.length) throw new Error("Missing 'end if'");
+                                if (lines[ip].trim().startsWith("if ")) depth++;
+                                if (lines[ip].trim() === "end if") depth--;
+                            }
+                        }
+                        ip++; continue;
+                    }
+                    if (line === "end if") { ip++; continue; }
+
+                    // 6. WHILE loops
+                    let whileMatch = line.match(/^while (.+) is (equal to|greater than|less than) (.+)$/);
+                    if (whileMatch) {
+                        let v1 = getValue(whileMatch[1]);
+                        let op = whileMatch[2];
+                        let v2 = getValue(whileMatch[3]);
+                        
+                        let isTrue = false;
+                        if (op === "equal to") isTrue = v1 === v2;
+                        if (op === "greater than") isTrue = v1 > v2;
+                        if (op === "less than") isTrue = v1 < v2;
+
+                        if (isTrue) {
+                            loopStack.push(ip); // Save where the loop started
+                            ip++;
+                        } else {
+                            // Skip to 'end while'
+                            let depth = 1;
+                            while (depth > 0) {
+                                ip++;
+                                if (ip >= lines.length) throw new Error("Missing 'end while'");
+                                if (lines[ip].trim().startsWith("while ")) depth++;
+                                if (lines[ip].trim() === "end while") depth--;
+                            }
+                            ip++;
+                        }
+                        continue;
+                    }
+                    if (line === "end while") {
+                        if (loopStack.length === 0) throw new Error("'end while' found without a 'while'");
+                        ip = loopStack.pop(); // Jump back up to evaluate the while condition again
+                        continue;
+                    }
+
+                    throw new Error(`Unrecognized command: '${line}'`);
+                }
+                
+                print("--- Program Finished ---", false);
+            } catch (err) {
+                print(`Error on line ${ip + 1}: ${err.message}`, true);
+            }
+        }
+    </script>
+</body>
+</html>
