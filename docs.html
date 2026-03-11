@@ -5,92 +5,96 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>E# Official Documentation</title>
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { margin: 0; background-color: #0d1117; color: #c9d1d9; display: flex; height: 100vh; }
-        
-        /* Sidebar Navigation */
-        .sidebar { width: 250px; background-color: #161b22; border-right: 1px solid #30363d; padding: 20px; overflow-y: auto; }
-        .sidebar h2 { color: #58a6ff; margin-top: 0; font-size: 20px; }
-        .sidebar a { display: block; color: #c9d1d9; text-decoration: none; padding: 8px 0; border-bottom: 1px solid #30363d; }
-        .sidebar a:hover { color: #58a6ff; }
-
-        /* Main Content */
-        .content { flex: 1; padding: 40px; overflow-y: auto; }
-        h1 { color: #fff; border-bottom: 2px solid #30363d; padding-bottom: 10px; }
-        h2 { color: #58a6ff; margin-top: 40px; }
-        p { line-height: 1.6; }
-        
-        /* Code Blocks */
-        .code-block { background-color: #1e1e1e; padding: 15px; border-radius: 6px; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; border: 1px solid #30363d; margin: 10px 0; }
-        .keyword { color: #ff7b72; }
-        .type { color: #79c0ff; }
-        .string { color: #a5d6ff; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f4f4f9; color: #333; line-height: 1.6; padding: 40px; max-width: 900px; margin: auto; }
+        h1 { color: #ff5e5e; border-bottom: 2px solid #ff5e5e; padding-bottom: 10px; }
+        h2 { color: #2d2d2d; margin-top: 30px; }
+        code { background: #2d2d2d; color: #7ee787; padding: 4px 8px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-weight: bold; }
+        .example { background: #e8e8e8; padding: 15px; border-left: 4px solid #ff5e5e; margin: 10px 0; border-radius: 4px; font-family: 'Courier New', Courier, monospace; }
+        ul { background: #fff; padding: 20px 40px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        li { margin-bottom: 15px; }
+        .special-keys { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
-        <h2>E# Docs</h2>
-        <a href="#variables">Variables & Types</a>
-        <a href="#math">Math & Random</a>
-        <a href="#io">Input & Output</a>
-        <a href="#logic">Logic & Loops</a>
-        <a href="#flow">Program Flow</a>
+    <h1>E# Language Reference</h1>
+    <p>Welcome to the complete documentation for E# (English Sharp) Game Engine Edition! E# reads just like a book.</p>
+
+    <h2>1. Variables & Math</h2>
+    <ul>
+        <li><strong>Create a Variable:</strong> <code>set [number|string|boolean] [name] to [value]</code>
+            <div class="example">set number score to 0<br>set string playerName to "Hero"<br>set boolean isRunning to true</div>
+        </li>
+        <li><strong>Random Numbers:</strong> <code>set number [name] to random between [min] and [max]</code></li>
+        <li><strong>Combine Strings:</strong> <code>combine [value1] and [value2] into [newName]</code>
+            <div class="example">combine "Score: " and score into scoreText</div>
+        </li>
+        <li><strong>Math:</strong> <code>add [number] to [variable]</code> or <code>subtract [number] from [variable]</code></li>
+    </ul>
+
+    <h2>2. Game Objects (The Good Stuff!)</h2>
+    <ul>
+        <li><strong>Create Object:</strong> <code>set object [name] to [sprite] at x [num] y [num]</code>
+            <div class="example">set object player to "🚀" at x 150 y 150</div>
+        </li>
+        <li><strong>Draw Object:</strong> <code>draw object [name]</code></li>
+        <li><strong>Move Object Coordinates:</strong> <code>add [num] to [object]'s x</code> (or y)</li>
+        <li><strong>Enemy Tracking (AI):</strong> <code>move [object1] towards [object2] by [speed]</code>
+            <div class="example">move enemy towards player by 2</div>
+        </li>
+        <li><strong>Collision Detection:</strong> <code>if [object1] is touching [object2]</code>
+            <div class="example">if player is touching enemy<br>&nbsp;&nbsp;&nbsp;&nbsp;print "You died!"<br>end if</div>
+        </li>
+    </ul>
+
+    <h2>3. Graphics & UI</h2>
+    <ul>
+        <li><strong>Draw Sprite (No Object):</strong> <code>draw sprite [text/emoji] at x [num] y [num]</code></li>
+        <li><strong>Draw Text:</strong> <code>draw text [string/variable] at x [num] y [num]</code>
+            <div class="example">draw text "Level 1" at x 10 y 30</div>
+        </li>
+        <li><strong>Clear Screen:</strong> <code>clear canvas</code></li>
+    </ul>
+
+    <h2>4. Input & Control</h2>
+    <ul>
+        <li><strong>Check Keys (Real-time):</strong> <code>if you pressed "[key]"</code>
+            <div class="example">if you pressed "arrow up"<br>&nbsp;&nbsp;&nbsp;&nbsp;subtract 5 from player's y<br>end if</div>
+        </li>
+        <li><strong>Terminal Input (Pause):</strong> <code>ask user for [string|number] [name] with "[prompt]"</code></li>
+    </ul>
+
+    <div class="special-keys">
+        <strong>Special Key Mappings:</strong><br>
+        Use these names inside your quotes for keyboard inputs:<br>
+        <code>"arrow up"</code>, <code>"arrow down"</code>, <code>"arrow left"</code>, <code>"arrow right"</code>, <code>"space"</code>, <code>"w"</code>, <code>"a"</code>, <code>"s"</code>, <code>"d"</code>.
     </div>
 
-    <div class="content">
-        <h1>E# Language Reference</h1>
-        <p>Welcome to the official documentation for E# (English Sharp). E# is a strongly-typed, asynchronous programming language designed to read like plain English.</p>
+    <h2>5. Logic & Loops</h2>
+    <ul>
+        <li><strong>If Statements:</strong> <code>if [value] is [equal to|greater than|less than] [value]</code></li>
+        <li><strong>Boolean Checks:</strong> <code>if [variable] is [true|false]</code></li>
+        <li><strong>While Loops:</strong> <code>while [variable] is [true|false]</code><br>
+            Don't forget to put <code>wait 30 milliseconds</code> inside your game loops so the browser doesn't crash!
+        </li>
+        <li><em>Always close logic blocks with <code>end if</code> or <code>end while</code>!</em></li>
+    </ul>
 
-        <h2 id="variables">Variables & Data Types</h2>
-        <p>E# requires you to declare the type of a variable before naming it. The supported types are <span class="type">number</span>, <span class="type">string</span>, and <span class="type">boolean</span>.</p>
-        <div class="code-block">
-            set number age to 25<br>
-            set string greeting to "Hello World"<br>
-            set boolean isReady to true
-        </div>
+    <h2>6. Functions</h2>
+    <ul>
+        <li><strong>Define a Function:</strong> Wraps code so it can be reused later.
+            <div class="example">create function movePlayer<br>&nbsp;&nbsp;&nbsp;&nbsp;add 5 to player's x<br>end function</div>
+        </li>
+        <li><strong>Execute a Function:</strong> <code>run [functionName]</code></li>
+    </ul>
 
-        <h2 id="math">Math & Random Numbers</h2>
-        <p>You can perform basic arithmetic on number variables, or generate random numbers.</p>
-        <div class="code-block">
-            add 5 to age<br>
-            subtract 2 from age<br>
-            <br>
-            // Generates a random number inclusive of the min and max<br>
-            set number diceRoll to random between 1 and 6
-        </div>
-
-        <h2 id="io">Input & Output</h2>
-        <p>Interact with the terminal using print commands and user prompts.</p>
-        <div class="code-block">
-            print "System Online"<br>
-            print age<br>
-            <br>
-            ask user for string playerName with "What is your name?"<br>
-            clear terminal
-        </div>
-
-        <h2 id="logic">Logic & Loops</h2>
-        <p>Control the flow of your program based on conditions. Supported comparisons: <b>equal to</b>, <b>greater than</b>, <b>less than</b>.</p>
-        <div class="code-block">
-            if age is greater than 18<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;print "Access Granted"<br>
-            end if<br>
-            <br>
-            while age is less than 30<br>
-            &nbsp;&nbsp;&nbsp;&nbsp;add 1 to age<br>
-            end while
-        </div>
-
-        <h2 id="flow">Program Flow & Windows</h2>
-        <p>Pause execution, wait for user key presses, or open new web pages.</p>
-        <div class="code-block">
-            wait 2 seconds<br>
-            wait for key "Enter"<br>
-            open window "https://example.com"<br>
-            end program
-        </div>
-    </div>
+    <h2>7. Utilities</h2>
+    <ul>
+        <li><strong>Timers:</strong> <code>wait [num] seconds</code> or <code>wait [num] milliseconds</code></li>
+        <li><strong>Printing:</strong> <code>print [text or variable]</code></li>
+        <li><strong>Clearing Terminal:</strong> <code>clear terminal</code></li>
+        <li><strong>Quit:</strong> <code>end program</code></li>
+    </ul>
 
 </body>
 </html>
