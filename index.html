@@ -3,65 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E# Language Playground - Terminal Input</title>
+    <title>E# Language Playground</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { margin: 0; padding: 20px; background-color: #1e1e1e; color: #fff; display: flex; flex-direction: column; height: 100vh; }
-        h1 { margin-top: 0; color: #4af626; }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        h1 { margin: 0; color: #ff5e5e; }
+        .docs-btn { background: #3c3c3c; color: #fff; border: 1px solid #555; padding: 8px 16px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 14px; }
+        .docs-btn:hover { background: #555; }
+        
         .container { display: flex; gap: 20px; flex: 1; min-height: 0; }
         .panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
         .panel-header { background: #3c3c3c; padding: 10px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         textarea { flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 15px; resize: none; outline: none; line-height: 1.4; }
         #console { flex: 1; padding: 15px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; white-space: pre-wrap; display: flex; flex-direction: column; }
-        button { background: #4af626; color: #000; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #3ce01d; }
-        button:disabled { background: #555; cursor: not-allowed; color: #888; }
         
-        /* Terminal Text Colors */
+        button.run-btn { background: #ff5e5e; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button.run-btn:hover { background: #e04848; }
+        button.run-btn:disabled { background: #555; cursor: not-allowed; color: #888; }
+        
         .error { color: #ff7b72; }
         .success { color: #7ee787; }
         .system { color: #8b949e; font-style: italic; }
-        .highlight { color: #4af626; font-weight: bold; }
+        .highlight { color: #ff5e5e; font-weight: bold; }
         
-        /* Custom Terminal Input Styling */
         .input-line { display: flex; align-items: center; margin-top: 2px; }
-        .input-prompt { color: #4af626; margin-right: 8px; font-weight: bold; }
+        .input-prompt { color: #ff5e5e; margin-right: 8px; font-weight: bold; }
         .terminal-input { flex: 1; background: transparent; border: none; color: #fff; font-family: 'Courier New', Courier, monospace; font-size: 15px; outline: none; padding: 0; }
     </style>
 </head>
 <body>
 
-    <h1>E# Playground</h1>
-    <p>Now featuring: In-Terminal Command Line Inputs!</p>
+    <div class="header-bar">
+        <h1>E# Playground</h1>
+        <a href="docs.html" target="_blank" class="docs-btn">View E# Documentation</a>
+    </div>
 
     <div class="container">
         <div class="panel">
             <div class="panel-header">
                 <span>Program.e#</span>
-                <button id="runBtn" onclick="startExecution()">Run Program</button>
+                <button id="runBtn" class="run-btn" onclick="startExecution()">Run Program</button>
             </div>
             <textarea id="editor" spellcheck="false">
-print "Initializing User Registration..."
+print "Welcome to the E# Dice Casino!"
+ask user for string playerName with "Enter your name to play:"
 
-ask user for string userName with "What is your name?"
-ask user for number userAge with "How old are you?"
+clear terminal
+print "Good luck,"
+print playerName
 
-print "Welcome to the system!"
-print userName
-
-if userAge is less than 18
-    print "Access denied. You are too young."
-    end program
-end if
-
-print "Access granted. Loading dashboard..."
+print "Rolling the dice..."
 wait 1 second
 
-print "Press 'q' to logout."
-wait for key "q"
+// Generate a random number!
+set number diceRoll to random between 1 and 6
 
-print "Logging out..."
-end program
+print "You rolled a:"
+print diceRoll
+
+if diceRoll is greater than 3
+    print "You win!"
+end if
+
+if diceRoll is less than 4
+    print "You lose. Better luck next time."
+end if
             </textarea>
         </div>
 
@@ -74,7 +81,6 @@ end program
     <script>
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-        // Wait for a specific key press
         function waitForKey(targetKey) {
             return new Promise(resolve => {
                 const listener = (event) => {
@@ -87,12 +93,9 @@ end program
             });
         }
 
-        // --- NEW: Wait for terminal input ---
         function waitForTerminalInput() {
             return new Promise(resolve => {
                 const consoleOut = document.getElementById('console');
-                
-                // Create the input UI
                 const lineDiv = document.createElement('div');
                 lineDiv.className = 'input-line';
                 
@@ -109,16 +112,12 @@ end program
                 lineDiv.appendChild(inputField);
                 consoleOut.appendChild(lineDiv);
                 
-                // Auto-scroll and focus
                 consoleOut.scrollTop = consoleOut.scrollHeight;
                 inputField.focus();
 
-                // Listen for the Enter key
                 inputField.addEventListener('keydown', function(event) {
                     if (event.key === 'Enter') {
                         const answer = inputField.value;
-                        
-                        // Lock in the answer (replace input field with plain text)
                         lineDiv.innerHTML = `<span class="input-prompt">></span><span style="color: #fff;">${answer}</span>`;
                         resolve(answer);
                     }
@@ -174,32 +173,47 @@ end program
                     let line = lines[ip].trim();
                     if (!line || line.startsWith('//')) { ip++; continue; }
 
+                    if (line === "clear terminal") {
+                        consoleOut.innerHTML = '';
+                        ip++; continue;
+                    }
+
+                    let openMatch = line.match(/^open window "([^"]+)"$/);
+                    if (openMatch) {
+                        window.open(openMatch[1], '_blank');
+                        print(`[System opened new window: ${openMatch[1]}]`, 'system');
+                        ip++; continue;
+                    }
+
                     if (line === "end program") {
                         print("--- Program Terminated ---", 'system');
                         return; 
                     }
 
-                    // --- UPDATED: IN-TERMINAL PROMPT ---
+                    // --- NEW: RANDOM NUMBERS ---
+                    let randomMatch = line.match(/^set number (\w+) to random between (\d+) and (\d+)$/);
+                    if (randomMatch) {
+                        let varName = randomMatch[1];
+                        let min = Number(randomMatch[2]);
+                        let max = Number(randomMatch[3]);
+                        
+                        // Generates a random integer between min and max (inclusive)
+                        let randomVal = Math.floor(Math.random() * (max - min + 1)) + min;
+                        variables[varName] = { type: 'number', value: randomVal };
+                        ip++; continue;
+                    }
+
                     let askMatch = line.match(/^ask user for (string|number) (\w+) with "([^"]+)"$/);
                     if (askMatch) {
-                        let type = askMatch[1];
-                        let varName = askMatch[2];
-                        let promptMessage = askMatch[3];
-
-                        print(promptMessage, 'highlight'); // Print the question
-                        let userInput = await waitForTerminalInput(); // Pause and wait for the user to type in the terminal
-
-                        // Type checking
-                        if (type === 'number') {
+                        print(askMatch[3], 'highlight');
+                        let userInput = await waitForTerminalInput();
+                        if (askMatch[1] === 'number') {
                             let numVal = Number(userInput);
-                            if (isNaN(numVal) || userInput.trim() === "") {
-                                throw new Error(`Expected a number for '${varName}', but got '${userInput}'.`);
-                            }
-                            variables[varName] = { type: 'number', value: numVal };
+                            if (isNaN(numVal) || userInput.trim() === "") throw new Error(`Expected a number for '${askMatch[2]}'.`);
+                            variables[askMatch[2]] = { type: 'number', value: numVal };
                         } else {
-                            variables[varName] = { type: 'string', value: userInput };
+                            variables[askMatch[2]] = { type: 'string', value: userInput };
                         }
-                        
                         ip++; continue;
                     }
 
