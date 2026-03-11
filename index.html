@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E# Language Playground - Interactive Edition</title>
+    <title>E# Language Playground - Input Edition</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { margin: 0; padding: 20px; background-color: #1e1e1e; color: #fff; display: flex; flex-direction: column; height: 100vh; }
-        h1 { margin-top: 0; color: #f0db4f; }
+        h1 { margin-top: 0; color: #ff9800; }
         .container { display: flex; gap: 20px; flex: 1; min-height: 0; }
         .panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
         .panel-header { background: #3c3c3c; padding: 10px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         textarea { flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 15px; resize: none; outline: none; line-height: 1.4; }
         #console { flex: 1; padding: 15px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; white-space: pre-wrap; }
-        button { background: #f0db4f; color: #000; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #d6c23a; }
+        button { background: #ff9800; color: #000; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #e68a00; }
         button:disabled { background: #555; cursor: not-allowed; color: #888; }
         .error { color: #ff7b72; }
         .success { color: #7ee787; }
         .system { color: #8b949e; font-style: italic; }
-        .highlight { color: #f0db4f; font-weight: bold; }
+        .highlight { color: #ff9800; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <h1>E# Playground</h1>
-    <p>Now featuring: Keyboard interactions!</p>
+    <p>Now featuring: User Prompts and Program Termination!</p>
 
     <div class="container">
         <div class="panel">
@@ -34,19 +34,25 @@
                 <button id="runBtn" onclick="startExecution()">Run Program</button>
             </div>
             <textarea id="editor" spellcheck="false">
-print "Welcome to the E# Security System."
-print "Please press the 'Enter' key to begin."
+print "Initializing User Registration..."
 
-wait for key "Enter"
+// Ask the user for a string and a number
+ask user for string userName with "What is your name?"
+ask user for number userAge with "How old are you?"
 
-print "Access granted."
-wait 1 second
+print "Welcome to the system!"
+print userName
 
-print "Press 'y' to disarm the alarm or 'n' to trigger it."
-// We can wait for any specific key you define
-wait for key "y"
+if userAge is less than 18
+    print "Access denied. You are too young."
+    end program
+end if
 
-print "Alarm disarmed. Have a nice day!"
+print "Access granted. Loading dashboard..."
+wait 2 seconds
+
+print "Logging out..."
+end program
             </textarea>
         </div>
 
@@ -59,14 +65,12 @@ print "Alarm disarmed. Have a nice day!"
     <script>
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-        // New helper function to listen for a key press
         function waitForKey(targetKey) {
             return new Promise(resolve => {
                 const listener = (event) => {
-                    // Check if the key pressed matches our target (case-insensitive)
                     if (event.key.toLowerCase() === targetKey.toLowerCase()) {
-                        document.removeEventListener('keydown', listener); // Stop listening
-                        resolve(); // Resume the E# program
+                        document.removeEventListener('keydown', listener);
+                        resolve();
                     }
                 };
                 document.addEventListener('keydown', listener);
@@ -78,7 +82,6 @@ print "Alarm disarmed. Have a nice day!"
             runBtn.disabled = true;
             runBtn.innerText = "Running...";
             
-            // Focus the console so keyboard events register cleanly
             document.getElementById('console').focus();
             
             await runESharp();
@@ -124,23 +127,56 @@ print "Alarm disarmed. Have a nice day!"
                     let line = lines[ip].trim();
                     if (!line || line.startsWith('//')) { ip++; continue; }
 
-                    // --- NEW: WAIT FOR KEY ---
-                    let keyMatch = line.match(/^wait for key "(.+)"$/);
-                    if (keyMatch) {
-                        let targetKey = keyMatch[1];
-                        print(`[System is waiting for you to press '${targetKey}']`, 'highlight');
-                        await waitForKey(targetKey); // Program pauses here until key is pressed
+                    // --- NEW: END PROGRAM ---
+                    if (line === "end program") {
+                        print("--- Program Terminated by 'end program' ---", 'system');
+                        window.close(); // Attempts to close the tab
+                        print("[Browser Security Note: Scripts cannot close tabs they did not open.]", 'highlight');
+                        return; // This completely stops the while loop and exits the interpreter
+                    }
+
+                    // --- NEW: USER PROMPTS ---
+                    let askMatch = line.match(/^ask user for (string|number) (\w+) with "([^"]+)"$/);
+                    if (askMatch) {
+                        let type = askMatch[1];
+                        let varName = askMatch[2];
+                        let promptMessage = askMatch[3];
+
+                        // Trigger the browser's native prompt
+                        let userInput = window.prompt(promptMessage);
+
+                        if (userInput === null) {
+                            throw new Error("User cancelled the input prompt.");
+                        }
+
+                        // Type checking
+                        if (type === 'number') {
+                            let numVal = Number(userInput);
+                            if (isNaN(numVal) || userInput.trim() === "") {
+                                throw new Error(`Expected a number for '${varName}', but got '${userInput}'.`);
+                            }
+                            variables[varName] = { type: 'number', value: numVal };
+                        } else {
+                            variables[varName] = { type: 'string', value: userInput };
+                        }
+                        
                         ip++; continue;
                     }
 
-                    // --- TIMERS ---
+                    // --- PREVIOUS FEATURES (Wait for key, Timers, Variables, If, Print) ---
+                    let keyMatch = line.match(/^wait for key "(.+)"$/);
+                    if (keyMatch) {
+                        print(`[System is waiting for you to press '${keyMatch[1]}']`, 'highlight');
+                        await waitForKey(keyMatch[1]);
+                        ip++; continue;
+                    }
+
                     let waitMatch = line.match(/^wait (\d+) seconds?$/);
                     if (waitMatch) {
                         await sleep(Number(waitMatch[1]) * 1000);
                         ip++; continue;
                     }
 
-                    // --- C# LOGIC (from previous steps) ---
                     let setMatch = line.match(/^set (number|string|boolean) (\w+) to (.+)$/);
                     if (setMatch) {
                         variables[setMatch[2]] = { type: setMatch[1], value: getValue(setMatch[3]) };
@@ -151,6 +187,23 @@ print "Alarm disarmed. Have a nice day!"
                         print(getValue(line.substring(6)));
                         ip++; continue;
                     }
+
+                    let ifMatch = line.match(/^if (.+) is (equal to|greater than|less than) (.+)$/);
+                    if (ifMatch) {
+                        let v1 = getValue(ifMatch[1]), op = ifMatch[2], v2 = getValue(ifMatch[3]);
+                        let isTrue = (op === "equal to" && v1 === v2) || (op === "greater than" && v1 > v2) || (op === "less than" && v1 < v2);
+                        if (!isTrue) {
+                            let depth = 1;
+                            while (depth > 0) {
+                                ip++;
+                                if (ip >= lines.length) throw new Error("Missing 'end if'");
+                                if (lines[ip].trim().startsWith("if ")) depth++;
+                                if (lines[ip].trim() === "end if") depth--;
+                            }
+                        }
+                        ip++; continue;
+                    }
+                    if (line === "end if") { ip++; continue; }
 
                     throw new Error(`Unrecognized command: '${line}'`);
                 }
