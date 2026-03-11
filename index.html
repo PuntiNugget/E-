@@ -3,32 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E# Language Playground</title>
+    <title>E# Language Playground - Linter Edition</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { margin: 0; padding: 20px; background-color: #1e1e1e; color: #fff; display: flex; flex-direction: column; height: 100vh; }
         .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        h1 { margin: 0; color: #ff5e5e; }
+        h1 { margin: 0; color: #b392f0; }
         .docs-btn { background: #3c3c3c; color: #fff; border: 1px solid #555; padding: 8px 16px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 14px; }
         .docs-btn:hover { background: #555; }
         
         .container { display: flex; gap: 20px; flex: 1; min-height: 0; }
         .panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
         .panel-header { background: #3c3c3c; padding: 10px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* The Editor area now holds the textarea AND the linter bar */
+        .editor-wrapper { flex: 1; display: flex; flex-direction: column; min-height: 0; }
         textarea { flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 15px; resize: none; outline: none; line-height: 1.4; }
+        
+        /* The New Linter Bar */
+        #linter-bar { padding: 8px 15px; font-size: 14px; font-weight: bold; font-family: 'Courier New', Courier, monospace; border-top: 1px solid #444; }
+        .linter-good { background: #238636; color: #fff; }
+        .linter-bad { background: #da3633; color: #fff; }
+
         #console { flex: 1; padding: 15px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; white-space: pre-wrap; display: flex; flex-direction: column; }
         
-        button.run-btn { background: #ff5e5e; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button.run-btn:hover { background: #e04848; }
+        button.run-btn { background: #b392f0; color: #000; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button.run-btn:hover { background: #9a75db; }
         button.run-btn:disabled { background: #555; cursor: not-allowed; color: #888; }
         
         .error { color: #ff7b72; }
         .success { color: #7ee787; }
         .system { color: #8b949e; font-style: italic; }
-        .highlight { color: #ff5e5e; font-weight: bold; }
+        .highlight { color: #b392f0; font-weight: bold; }
         
         .input-line { display: flex; align-items: center; margin-top: 2px; }
-        .input-prompt { color: #ff5e5e; margin-right: 8px; font-weight: bold; }
+        .input-prompt { color: #b392f0; margin-right: 8px; font-weight: bold; }
         .terminal-input { flex: 1; background: transparent; border: none; color: #fff; font-family: 'Courier New', Courier, monospace; font-size: 15px; outline: none; padding: 0; }
     </style>
 </head>
@@ -45,31 +54,23 @@
                 <span>Program.e#</span>
                 <button id="runBtn" class="run-btn" onclick="startExecution()">Run Program</button>
             </div>
-            <textarea id="editor" spellcheck="false">
-print "Welcome to the E# Dice Casino!"
-ask user for string playerName with "Enter your name to play:"
+            <div class="editor-wrapper">
+                <textarea id="editor" spellcheck="false">
+print "System Diagnostic Tool"
+ask user for string technicianName with "Enter your name:"
 
-clear terminal
-print "Good luck,"
-print playerName
+print "Welcome,"
+print technicianName
 
-print "Rolling the dice..."
+// Try typing 'print secretCode' on the next line to see the linter catch it!
+
 wait 1 second
-
-// Generate a random number!
-set number diceRoll to random between 1 and 6
-
-print "You rolled a:"
-print diceRoll
-
-if diceRoll is greater than 3
-    print "You win!"
-end if
-
-if diceRoll is less than 4
-    print "You lose. Better luck next time."
-end if
-            </textarea>
+clear terminal
+print "All systems operational."
+end program
+                </textarea>
+                <div id="linter-bar" class="linter-good">Syntax OK - Ready to Run</div>
+            </div>
         </div>
 
         <div class="panel">
@@ -81,6 +82,91 @@ end if
     <script>
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+        // --- NEW: Live Linter (Syntax Checker) ---
+        const editor = document.getElementById('editor');
+        const linterBar = document.getElementById('linter-bar');
+
+        editor.addEventListener('input', checkSyntax);
+
+        function isRawValue(valStr) {
+            valStr = valStr.trim();
+            if (valStr === "true" || valStr === "false") return true;
+            if (!isNaN(valStr)) return true;
+            if (valStr.startsWith('"') && valStr.endsWith('"')) return true;
+            return false;
+        }
+
+        function checkSyntax() {
+            const lines = editor.value.split('\n');
+            let knownVariables = new Set();
+            let hasError = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+                if (!line || line.startsWith('//')) continue;
+
+                let isValidCommand = false;
+
+                // 1. Variable Declarations (Remember them for later)
+                let setMatch = line.match(/^set (number|string|boolean) (\w+) to (.+)$/);
+                let randomMatch = line.match(/^set number (\w+) to random between (\d+) and (\d+)$/);
+                let askMatch = line.match(/^ask user for (string|number) (\w+) with "([^"]+)"$/);
+                
+                if (setMatch) { knownVariables.add(setMatch[2]); isValidCommand = true; }
+                else if (randomMatch) { knownVariables.add(randomMatch[1]); isValidCommand = true; }
+                else if (askMatch) { knownVariables.add(askMatch[2]); isValidCommand = true; }
+                
+                // 2. Commands that use variables or values
+                else if (line.startsWith('print ')) {
+                    let val = line.substring(6).trim();
+                    if (isRawValue(val) || knownVariables.has(val)) isValidCommand = true;
+                    else { showError(i + 1, `Undeclared variable '${val}'`); hasError = true; break; }
+                }
+                else if (line === "clear terminal" || line === "end program" || line === "end if" || line === "end while") {
+                    isValidCommand = true;
+                }
+                else if (line.match(/^open window "([^"]+)"$/)) {
+                    isValidCommand = true;
+                }
+                else if (line.match(/^wait (\d+) seconds?$/)) {
+                    isValidCommand = true;
+                }
+                else if (line.match(/^wait for key "(.+)"$/)) {
+                    isValidCommand = true;
+                }
+                else if (line.match(/^if (.+) is (equal to|greater than|less than) (.+)$/)) {
+                    isValidCommand = true; // Simplified check for if statements
+                }
+                else if (line.match(/^while (.+) is (equal to|greater than|less than) (.+)$/)) {
+                    isValidCommand = true; // Simplified check for while statements
+                }
+
+                if (!isValidCommand) {
+                    showError(i + 1, `Unrecognized command or syntax: '${line}'`);
+                    hasError = true;
+                    break;
+                }
+            }
+
+            if (!hasError) {
+                linterBar.className = 'linter-good';
+                linterBar.textContent = 'Syntax OK - Ready to Run';
+                document.getElementById('runBtn').disabled = false;
+            }
+        }
+
+        function showError(lineNumber, message) {
+            linterBar.className = 'linter-bad';
+            linterBar.textContent = `Error on Line ${lineNumber}: ${message}`;
+            // Disable the run button so they can't run broken code!
+            document.getElementById('runBtn').disabled = true; 
+        }
+
+        // Run the linter once when the page loads
+        checkSyntax();
+
+
+        // --- Existing Terminal & Execution Logic ---
         function waitForKey(targetKey) {
             return new Promise(resolve => {
                 const listener = (event) => {
@@ -190,16 +276,10 @@ end if
                         return; 
                     }
 
-                    // --- NEW: RANDOM NUMBERS ---
                     let randomMatch = line.match(/^set number (\w+) to random between (\d+) and (\d+)$/);
                     if (randomMatch) {
-                        let varName = randomMatch[1];
-                        let min = Number(randomMatch[2]);
-                        let max = Number(randomMatch[3]);
-                        
-                        // Generates a random integer between min and max (inclusive)
-                        let randomVal = Math.floor(Math.random() * (max - min + 1)) + min;
-                        variables[varName] = { type: 'number', value: randomVal };
+                        let varName = randomMatch[1], min = Number(randomMatch[2]), max = Number(randomMatch[3]);
+                        variables[varName] = { type: 'number', value: Math.floor(Math.random() * (max - min + 1)) + min };
                         ip++; continue;
                     }
 
