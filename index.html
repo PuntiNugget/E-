@@ -3,77 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E# Language Playground - Pro</title>
+    <title>E# Language Playground - Async Edition</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { margin: 0; padding: 20px; background-color: #1e1e1e; color: #fff; display: flex; flex-direction: column; height: 100vh; }
-        h1 { margin-top: 0; color: #9cdcfe; }
+        h1 { margin-top: 0; color: #c586c0; }
         .container { display: flex; gap: 20px; flex: 1; min-height: 0; }
         .panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
         .panel-header { background: #3c3c3c; padding: 10px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-        textarea { flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 15px; resize: none; outline: none; }
+        textarea { flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 15px; resize: none; outline: none; line-height: 1.4; }
         #console { flex: 1; padding: 15px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; white-space: pre-wrap; }
-        button { background: #9cdcfe; color: #000; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #6cb6ff; }
+        button { background: #c586c0; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #a864a3; }
+        button:disabled { background: #555; cursor: not-allowed; color: #888; }
         .error { color: #ff7b72; }
         .success { color: #7ee787; }
+        .system { color: #8b949e; font-style: italic; }
     </style>
 </head>
 <body>
 
     <h1>E# Playground</h1>
-    <p>C# features added: Strong types (number, string, boolean), While Loops, and If statements!</p>
+    <p>Now featuring Asynchronous Timers and Custom Actions!</p>
 
     <div class="container">
         <div class="panel">
             <div class="panel-header">
                 <span>Program.e#</span>
-                <button onclick="runESharp()">Run Program</button>
+                <button id="runBtn" onclick="startExecution()">Run Program</button>
             </div>
             <textarea id="editor" spellcheck="false">
-// This is an E# program that counts down
-set number counter to 3
-set string message to "Liftoff!"
-set boolean isReady to true
+// Define a custom action (like a C# Method)
+define action blastoff
+    print "🚀 Liftoff! We have liftoff!"
+end action
 
-if isReady is equal to true
-    print "Initiating launch sequence..."
-    
-    while counter is greater than 0
-        print counter
-        subtract 1 from counter
-    end while
-    
-    print message
-end if
+set number countdown to 3
+print "Starting launch sequence..."
+
+while countdown is greater than 0
+    print countdown
+    wait 1 second
+    subtract 1 from countdown
+end while
+
+// Call our custom action
+call blastoff
             </textarea>
         </div>
 
         <div class="panel">
-            <div class="panel-header">Terminal</div>
+            <div class="panel-header">Live Terminal</div>
             <div id="console"></div>
         </div>
     </div>
 
     <script>
-        function runESharp() {
+        // A helper function to pause JavaScript execution
+        const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        async function startExecution() {
+            const runBtn = document.getElementById('runBtn');
+            runBtn.disabled = true;
+            runBtn.innerText = "Running...";
+            
+            await runESharp();
+            
+            runBtn.disabled = false;
+            runBtn.innerText = "Run Program";
+        }
+
+        async function runESharp() {
             const code = document.getElementById('editor').value;
             const consoleOut = document.getElementById('console');
             consoleOut.innerHTML = '';
             
             let variables = {};
+            let actions = {};
             let lines = code.split('\n');
             let ip = 0; // Instruction Pointer
             let loopStack = [];
+            let callStack = []; // Remembers where to return after a function call
 
-            function print(text, isError = false) {
+            function print(text, type = 'normal') {
                 const span = document.createElement('div');
                 span.textContent = text;
-                if (isError) span.className = 'error';
+                if (type === 'error') span.className = 'error';
+                if (type === 'system') span.className = 'system';
+                if (type === 'success') span.className = 'success';
                 consoleOut.appendChild(span);
+                consoleOut.scrollTop = consoleOut.scrollHeight; // Auto-scroll to bottom
             }
 
-            // Helper to get raw values or read from variables
             function getValue(valStr) {
                 valStr = valStr.trim();
                 if (valStr === "true") return true;
@@ -85,102 +106,96 @@ end if
             }
 
             try {
-                print("--- Program Started ---", false);
-                document.lastChild.className = "success";
+                print("--- Compiling... ---", 'system');
+                
+                // First Pass: Find all actions (functions) so they can be called from anywhere
+                for (let i = 0; i < lines.length; i++) {
+                    let match = lines[i].trim().match(/^define action (\w+)$/);
+                    if (match) actions[match[1]] = i + 1;
+                }
 
+                print("--- Running ---", 'success');
+
+                // Second Pass: Execution (Now fully Asynchronous!)
                 while (ip < lines.length) {
                     let line = lines[ip].trim();
                     
-                    // Skip empty lines and comments
                     if (!line || line.startsWith('//')) { ip++; continue; }
 
-                    // 1. C# Style Variable Creation (Strongly Typed)
+                    // --- TIMERS ---
+                    let waitMatch = line.match(/^wait (\d+) seconds?$/);
+                    if (waitMatch) {
+                        let seconds = Number(waitMatch[1]);
+                        await sleep(seconds * 1000); // Pause execution here!
+                        ip++; continue;
+                    }
+
+                    // --- ACTIONS (Functions) ---
+                    // If we stumble upon a definition normally, skip over it
+                    let defMatch = line.match(/^define action (\w+)$/);
+                    if (defMatch) {
+                        let depth = 1;
+                        while (depth > 0) {
+                            ip++;
+                            if (ip >= lines.length) throw new Error("Missing 'end action'");
+                            if (lines[ip].trim().startsWith("define action ")) depth++;
+                            if (lines[ip].trim() === "end action") depth--;
+                        }
+                        ip++; continue;
+                    }
+
+                    let callMatch = line.match(/^call (\w+)$/);
+                    if (callMatch) {
+                        let actionName = callMatch[1];
+                        if (actions[actionName] !== undefined) {
+                            callStack.push(ip + 1); // Remember where to come back to
+                            ip = actions[actionName]; // Jump to the action
+                            continue;
+                        } else {
+                            throw new Error(`Action '${actionName}' is not defined.`);
+                        }
+                    }
+
+                    if (line === "end action") {
+                        if (callStack.length === 0) throw new Error("'end action' reached without being called.");
+                        ip = callStack.pop(); // Jump back to where we called it from
+                        continue;
+                    }
+
+                    // --- STANDARD C# LOGIC ---
                     let setMatch = line.match(/^set (number|string|boolean) (\w+) to (.+)$/);
                     if (setMatch) {
-                        let type = setMatch[1];
-                        let name = setMatch[2];
-                        let val = getValue(setMatch[3]);
-                        
-                        // Type checking like C#
-                        if (type === 'number' && typeof val !== 'number') throw new Error(`Type mismatch: '${name}' must be a number.`);
-                        if (type === 'string' && typeof val !== 'string') throw new Error(`Type mismatch: '${name}' must be a string.`);
-                        if (type === 'boolean' && typeof val !== 'boolean') throw new Error(`Type mismatch: '${name}' must be a boolean.`);
-                        
+                        let type = setMatch[1], name = setMatch[2], val = getValue(setMatch[3]);
                         variables[name] = { type, value: val };
                         ip++; continue;
                     }
 
-                    // 2. Variable reassignment
-                    let changeMatch = line.match(/^change (\w+) to (.+)$/);
-                    if (changeMatch) {
-                        let name = changeMatch[1];
-                        if (!variables[name]) throw new Error(`Variable '${name}' does not exist.`);
-                        let val = getValue(changeMatch[2]);
-                        variables[name].value = val; // Assuming same type for simplicity
-                        ip++; continue;
-                    }
-
-                    // 3. Print
                     if (line.startsWith('print ')) {
                         print(getValue(line.substring(6)));
                         ip++; continue;
                     }
 
-                    // 4. Math
-                    let addMatch = line.match(/^add (.+) to (\w+)$/);
-                    if (addMatch) {
-                        variables[addMatch[2]].value += getValue(addMatch[1]);
-                        ip++; continue;
-                    }
                     let subMatch = line.match(/^subtract (.+) from (\w+)$/);
                     if (subMatch) {
                         variables[subMatch[2]].value -= getValue(subMatch[1]);
                         ip++; continue;
                     }
-
-                    // 5. IF statements
-                    let ifMatch = line.match(/^if (.+) is (equal to|greater than|less than) (.+)$/);
-                    if (ifMatch) {
-                        let v1 = getValue(ifMatch[1]);
-                        let op = ifMatch[2];
-                        let v2 = getValue(ifMatch[3]);
-                        
-                        let isTrue = false;
-                        if (op === "equal to") isTrue = v1 === v2;
-                        if (op === "greater than") isTrue = v1 > v2;
-                        if (op === "less than") isTrue = v1 < v2;
-
-                        if (!isTrue) {
-                            // Skip forward to 'end if'
-                            let depth = 1;
-                            while (depth > 0) {
-                                ip++;
-                                if (ip >= lines.length) throw new Error("Missing 'end if'");
-                                if (lines[ip].trim().startsWith("if ")) depth++;
-                                if (lines[ip].trim() === "end if") depth--;
-                            }
-                        }
+                    
+                    let addMatch = line.match(/^add (.+) to (\w+)$/);
+                    if (addMatch) {
+                        variables[addMatch[2]].value += getValue(addMatch[1]);
                         ip++; continue;
                     }
-                    if (line === "end if") { ip++; continue; }
 
-                    // 6. WHILE loops
                     let whileMatch = line.match(/^while (.+) is (equal to|greater than|less than) (.+)$/);
                     if (whileMatch) {
-                        let v1 = getValue(whileMatch[1]);
-                        let op = whileMatch[2];
-                        let v2 = getValue(whileMatch[3]);
-                        
-                        let isTrue = false;
-                        if (op === "equal to") isTrue = v1 === v2;
-                        if (op === "greater than") isTrue = v1 > v2;
-                        if (op === "less than") isTrue = v1 < v2;
+                        let v1 = getValue(whileMatch[1]), op = whileMatch[2], v2 = getValue(whileMatch[3]);
+                        let isTrue = (op === "equal to" && v1 === v2) || (op === "greater than" && v1 > v2) || (op === "less than" && v1 < v2);
 
                         if (isTrue) {
-                            loopStack.push(ip); // Save where the loop started
+                            loopStack.push(ip);
                             ip++;
                         } else {
-                            // Skip to 'end while'
                             let depth = 1;
                             while (depth > 0) {
                                 ip++;
@@ -192,18 +207,19 @@ end if
                         }
                         continue;
                     }
+                    
                     if (line === "end while") {
                         if (loopStack.length === 0) throw new Error("'end while' found without a 'while'");
-                        ip = loopStack.pop(); // Jump back up to evaluate the while condition again
+                        ip = loopStack.pop();
                         continue;
                     }
 
                     throw new Error(`Unrecognized command: '${line}'`);
                 }
                 
-                print("--- Program Finished ---", false);
+                print("--- Program Finished ---", 'system');
             } catch (err) {
-                print(`Error on line ${ip + 1}: ${err.message}`, true);
+                print(`Error on line ${ip + 1}: ${err.message}`, 'error');
             }
         }
     </script>
