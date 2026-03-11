@@ -3,98 +3,519 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E# Official Documentation</title>
+    <title>E# Language Playground - Tilemap Edition</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f4f4f9; color: #333; line-height: 1.6; padding: 40px; max-width: 900px; margin: auto; }
-        h1 { color: #ff5e5e; border-bottom: 2px solid #ff5e5e; padding-bottom: 10px; }
-        h2 { color: #2d2d2d; margin-top: 30px; }
-        code { background: #2d2d2d; color: #7ee787; padding: 4px 8px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-weight: bold; }
-        .example { background: #e8e8e8; padding: 15px; border-left: 4px solid #ff5e5e; margin: 10px 0; border-radius: 4px; font-family: 'Courier New', Courier, monospace; }
-        ul { background: #fff; padding: 20px 40px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        li { margin-bottom: 15px; }
-        .special-keys { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { margin: 0; padding: 20px; background-color: #1e1e1e; color: #fff; display: flex; flex-direction: column; height: 100vh; }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        h1 { margin: 0; color: #ff5e5e; }
+        .docs-btn { background: #3c3c3c; color: #fff; border: 1px solid #555; padding: 8px 16px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 14px; }
+        .docs-btn:hover { background: #555; }
+        
+        .container { display: flex; gap: 20px; flex: 1; min-height: 0; }
+        
+        .editor-panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
+        .panel-header { background: #3c3c3c; padding: 10px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        textarea { flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 15px; resize: none; outline: none; line-height: 1.4; white-space: pre; }
+        #linter-bar { padding: 8px 15px; font-size: 14px; font-weight: bold; font-family: 'Courier New', Courier, monospace; border-top: 1px solid #444; }
+        .linter-good { background: #238636; color: #fff; }
+        .linter-bad { background: #da3633; color: #fff; }
+
+        .right-column { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+        .canvas-panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
+        .canvas-container { flex: 1; display: flex; justify-content: center; align-items: center; background: #000; overflow: hidden; }
+        canvas { background-color: #111; border: 1px solid #333; outline: none; }
+        canvas:focus { border: 1px solid #ff5e5e; }
+        
+        .terminal-panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
+        #console { flex: 1; padding: 15px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; white-space: pre-wrap; display: flex; flex-direction: column; }
+        
+        button.run-btn { background: #ff5e5e; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button.run-btn:hover { background: #e04848; }
+        button.run-btn:disabled { background: #555; cursor: not-allowed; color: #888; }
+        
+        .error { color: #ff7b72; }
+        .system { color: #8b949e; font-style: italic; }
+        .highlight { color: #ff5e5e; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h1>E# Language Reference</h1>
-    <p>Welcome to the complete documentation for E# (English Sharp) Game Engine Edition! E# reads just like a book.</p>
-
-    <h2>1. Variables & Math</h2>
-    <ul>
-        <li><strong>Create a Variable:</strong> <code>set [number|string|boolean] [name] to [value]</code>
-            <div class="example">set number score to 0<br>set string playerName to "Hero"<br>set boolean isRunning to true</div>
-        </li>
-        <li><strong>Random Numbers:</strong> <code>set number [name] to random between [min] and [max]</code></li>
-        <li><strong>Combine Strings:</strong> <code>combine [value1] and [value2] into [newName]</code>
-            <div class="example">combine "Score: " and score into scoreText</div>
-        </li>
-        <li><strong>Math:</strong> <code>add [number] to [variable]</code> or <code>subtract [number] from [variable]</code></li>
-    </ul>
-
-    <h2>2. Game Objects (The Good Stuff!)</h2>
-    <ul>
-        <li><strong>Create Object:</strong> <code>set object [name] to [sprite] at x [num] y [num]</code>
-            <div class="example">set object player to "🚀" at x 150 y 150</div>
-        </li>
-        <li><strong>Draw Object:</strong> <code>draw object [name]</code></li>
-        <li><strong>Move Object Coordinates:</strong> <code>add [num] to [object]'s x</code> (or y)</li>
-        <li><strong>Enemy Tracking (AI):</strong> <code>move [object1] towards [object2] by [speed]</code>
-            <div class="example">move enemy towards player by 2</div>
-        </li>
-        <li><strong>Collision Detection:</strong> <code>if [object1] is touching [object2]</code>
-            <div class="example">if player is touching enemy<br>&nbsp;&nbsp;&nbsp;&nbsp;print "You died!"<br>end if</div>
-        </li>
-    </ul>
-
-    <h2>3. Graphics & UI</h2>
-    <ul>
-        <li><strong>Draw Sprite (No Object):</strong> <code>draw sprite [text/emoji] at x [num] y [num]</code></li>
-        <li><strong>Draw Text:</strong> <code>draw text [string/variable] at x [num] y [num]</code>
-            <div class="example">draw text "Level 1" at x 10 y 30</div>
-        </li>
-        <li><strong>Clear Screen:</strong> <code>clear canvas</code></li>
-    </ul>
-
-    <h2>4. Input & Control</h2>
-    <ul>
-        <li><strong>Check Keys (Real-time):</strong> <code>if you pressed "[key]"</code>
-            <div class="example">if you pressed "arrow up"<br>&nbsp;&nbsp;&nbsp;&nbsp;subtract 5 from player's y<br>end if</div>
-        </li>
-        <li><strong>Terminal Input (Pause):</strong> <code>ask user for [string|number] [name] with "[prompt]"</code></li>
-    </ul>
-
-    <div class="special-keys">
-        <strong>Special Key Mappings:</strong><br>
-        Use these names inside your quotes for keyboard inputs:<br>
-        <code>"arrow up"</code>, <code>"arrow down"</code>, <code>"arrow left"</code>, <code>"arrow right"</code>, <code>"space"</code>, <code>"w"</code>, <code>"a"</code>, <code>"s"</code>, <code>"d"</code>.
+    <div class="header-bar">
+        <h1>E# Playground</h1>
+        <a href="docs.html" target="_blank" class="docs-btn">View E# Documentation</a>
     </div>
 
-    <h2>5. Logic & Loops</h2>
-    <ul>
-        <li><strong>If Statements:</strong> <code>if [value] is [equal to|greater than|less than] [value]</code></li>
-        <li><strong>Boolean Checks:</strong> <code>if [variable] is [true|false]</code></li>
-        <li><strong>While Loops:</strong> <code>while [variable] is [true|false]</code><br>
-            Don't forget to put <code>wait 30 milliseconds</code> inside your game loops so the browser doesn't crash!
-        </li>
-        <li><em>Always close logic blocks with <code>end if</code> or <code>end while</code>!</em></li>
-    </ul>
+    <div class="container">
+        <div class="editor-panel">
+            <div class="panel-header">
+                <span>Program.e#</span>
+                <button id="runBtn" class="run-btn" onclick="startExecution()">Run Program</button>
+            </div>
+            <textarea id="editor" spellcheck="false">
+print "Welcome to the Arena! Use Arrow Keys to move."
 
-    <h2>6. Functions</h2>
-    <ul>
-        <li><strong>Define a Function:</strong> Wraps code so it can be reused later.
-            <div class="example">create function movePlayer<br>&nbsp;&nbsp;&nbsp;&nbsp;add 5 to player's x<br>end function</div>
-        </li>
-        <li><strong>Execute a Function:</strong> <code>run [functionName]</code></li>
-    </ul>
+// Create our background level
+create tilemap arenaLevel
+    "🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫"
+    "🟫🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟫"
+    "🟫🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟫"
+    "🟫🟩🟩🟩🟩🟩🟫🟫🟩🟩🟩🟩🟩🟫"
+    "🟫🟩🟩🟩🟩🟩🟫🟫🟩🟩🟩🟩🟩🟫"
+    "🟫🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟫"
+    "🟫🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟫"
+    "🟫🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟫"
+    "🟫🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟫"
+    "🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫"
+end tilemap
 
-    <h2>7. Utilities</h2>
-    <ul>
-        <li><strong>Timers:</strong> <code>wait [num] seconds</code> or <code>wait [num] milliseconds</code></li>
-        <li><strong>Printing:</strong> <code>print [text or variable]</code></li>
-        <li><strong>Clearing Terminal:</strong> <code>clear terminal</code></li>
-        <li><strong>Quit:</strong> <code>end program</code></li>
-    </ul>
+set object player to "🚀" at x 200 y 150
+set object enemy to "👾" at x 50 y 50
+set boolean gameIsRunning to true
 
+while gameIsRunning is true
+    
+    run handlePlayerInput
+
+    move enemy towards player by 2
+
+    if player is touching enemy
+        // Play a sound when caught!
+        play sound "https://actions.google.com/sounds/v1/retro_game/retro_coin_pickup.ogg"
+        set boolean gameIsRunning to false
+    end if
+
+    clear canvas
+    
+    // Draw the tilemap first so it's in the background
+    draw tilemap arenaLevel at x 0 y 25
+    
+    // Then draw the objects on top
+    draw object player
+    draw object enemy
+
+    wait 30 milliseconds
+end while
+
+draw text "CAUGHT!" at x 150 y 150
+print "Game Over!"
+end program
+
+create function handlePlayerInput
+    if you pressed "arrow up"
+        subtract 5 from player's y
+    end if
+    if you pressed "arrow down"
+        add 5 to player's y
+    end if
+    if you pressed "arrow left"
+        subtract 5 from player's x
+    end if
+    if you pressed "arrow right"
+        add 5 to player's x
+    end if
+end function
+            </textarea>
+            <div id="linter-bar" class="linter-good">Syntax OK - Ready to Run</div>
+        </div>
+
+        <div class="right-column">
+            <div class="canvas-panel">
+                <div class="panel-header">Game Canvas (Click to focus)</div>
+                <div class="canvas-container">
+                    <canvas id="gameCanvas" width="400" height="300" tabindex="0"></canvas>
+                </div>
+            </div>
+
+            <div class="terminal-panel">
+                <div class="panel-header">Live Terminal</div>
+                <div id="console" tabindex="0"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+        const editor = document.getElementById('editor');
+        const linterBar = document.getElementById('linter-bar');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const activeKeys = new Set();
+        
+        canvas.addEventListener('keydown', (e) => {
+            let keyName = e.key.toLowerCase();
+            if (keyName === "arrowup") keyName = "arrow up";
+            if (keyName === "arrowdown") keyName = "arrow down";
+            if (keyName === "arrowleft") keyName = "arrow left";
+            if (keyName === "arrowright") keyName = "arrow right";
+            if (keyName === " ") keyName = "space";
+            
+            activeKeys.add(keyName);
+            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+        });
+        canvas.addEventListener('keyup', (e) => {
+            let keyName = e.key.toLowerCase();
+            if (keyName === "arrowup") keyName = "arrow up";
+            if (keyName === "arrowdown") keyName = "arrow down";
+            if (keyName === "arrowleft") keyName = "arrow left";
+            if (keyName === "arrowright") keyName = "arrow right";
+            if (keyName === " ") keyName = "space";
+            
+            activeKeys.delete(keyName);
+        });
+
+        editor.addEventListener('input', checkSyntax);
+
+        function isRawValue(valStr) {
+            valStr = valStr.trim();
+            if (valStr === "true" || valStr === "false") return true;
+            if (!isNaN(valStr)) return true;
+            if (valStr.startsWith('"') && valStr.endsWith('"')) return true;
+            return false;
+        }
+
+        function checkSyntax() {
+            const lines = editor.value.split('\n');
+            let knownVariables = new Set();
+            let knownFunctions = new Set();
+            let hasError = false;
+            let inTilemap = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                let funcMatch = lines[i].trim().match(/^create function (\w+)$/);
+                if (funcMatch) knownFunctions.add(funcMatch[1]);
+            }
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+                if (!line || line.startsWith('//')) continue;
+
+                let isValidCommand = false;
+
+                // --- NEW: Tilemap Syntax Checking ---
+                if (inTilemap) {
+                    if (line === "end tilemap") {
+                        inTilemap = false;
+                    }
+                    isValidCommand = true; // We accept whatever strings are inside
+                } else if (line.match(/^create tilemap (\w+)$/)) {
+                    knownVariables.add(line.match(/^create tilemap (\w+)$/)[1]);
+                    inTilemap = true;
+                    isValidCommand = true;
+                }
+                else if (line.match(/^draw tilemap (\w+) at x (.+) y (.+)$/)) isValidCommand = true;
+                // --- NEW: Sound Checking ---
+                else if (line.match(/^play sound "(.+)"$/)) isValidCommand = true;
+
+                else {
+                    let setMatch = line.match(/^set (number|string|boolean) (\w+) to (.+)$/);
+                    let randomMatch = line.match(/^set number (\w+) to random between (\d+) and (\d+)$/);
+                    let combineMatch = line.match(/^combine (.+) and (.+) into (\w+)$/);
+                    let setObjMatch = line.match(/^set object (\w+) to (.+) at x (.+) y (.+)$/);
+                    
+                    if (setMatch) { knownVariables.add(setMatch[2]); isValidCommand = true; }
+                    else if (randomMatch) { knownVariables.add(randomMatch[1]); isValidCommand = true; }
+                    else if (combineMatch) { knownVariables.add(combineMatch[3]); isValidCommand = true; }
+                    else if (setObjMatch) { knownVariables.add(setObjMatch[1]); isValidCommand = true; }
+                    
+                    else if (line.startsWith('print ')) isValidCommand = true;
+                    else if (line.match(/^ask user for (string|number) (\w+) with "([^"]+)"$/)) isValidCommand = true;
+                    else if (line.match(/^add (\d+) to (\w+)$/)) isValidCommand = true;
+                    else if (line.match(/^subtract (\d+) from (\w+)$/)) isValidCommand = true;
+                    else if (line.match(/^add (\d+) to (\w+)'s (x|y)$/)) isValidCommand = true;
+                    else if (line.match(/^subtract (\d+) from (\w+)'s (x|y)$/)) isValidCommand = true;
+                    else if (line.match(/^move (\w+) towards (\w+) by (\d+)$/)) isValidCommand = true;
+                    else if (line.match(/^draw object (\w+)$/)) isValidCommand = true;
+                    else if (line.match(/^draw sprite (.+) at x (.+) y (.+)$/)) isValidCommand = true;
+                    else if (line.match(/^draw text (.+) at x (.+) y (.+)$/)) isValidCommand = true;
+                    else if (line === "clear canvas" || line === "clear terminal" || line === "end program" || line === "end if" || line === "end while") isValidCommand = true;
+                    else if (line.match(/^open window "([^"]+)"$/)) isValidCommand = true;
+                    else if (line.match(/^wait (\d+) seconds?$/)) isValidCommand = true;
+                    else if (line.match(/^wait (\d+) milliseconds?$/)) isValidCommand = true;
+                    else if (line.match(/^wait for key "(.+)"$/)) isValidCommand = true;
+                    else if (line.match(/^if you pressed "(.+)"$/)) isValidCommand = true;
+                    else if (line.match(/^if (.+) is (true|false)$/)) isValidCommand = true; 
+                    else if (line.match(/^if (.+) is (equal to|greater than|less than) (.+)$/)) isValidCommand = true;
+                    else if (line.match(/^if (\w+) is touching (\w+)$/)) isValidCommand = true;
+                    else if (line.match(/^while (.+) is (equal to|greater than|less than) (.+)$/)) isValidCommand = true;
+                    else if (line.match(/^while (.+) is (true|false)$/)) isValidCommand = true;
+                    else if (line.match(/^create function (\w+)$/)) isValidCommand = true;
+                    else if (line === "end function") isValidCommand = true;
+                    else if (line.match(/^run (\w+)$/)) isValidCommand = true;
+                }
+
+                if (!isValidCommand) {
+                    showError(i + 1, `Unrecognized command or syntax: '${line}'`);
+                    hasError = true;
+                    break;
+                }
+            }
+
+            if (!hasError && inTilemap) {
+                showError(lines.length, "Missing 'end tilemap'");
+                hasError = true;
+            }
+
+            if (!hasError) {
+                linterBar.className = 'linter-good';
+                linterBar.textContent = 'Syntax OK - Ready to Run';
+                document.getElementById('runBtn').disabled = false;
+            }
+        }
+
+        function showError(lineNumber, message) {
+            linterBar.className = 'linter-bad';
+            linterBar.textContent = `Error on Line ${lineNumber}: ${message}`;
+            document.getElementById('runBtn').disabled = true; 
+        }
+
+        checkSyntax();
+
+        let isRunning = false; 
+
+        async function startExecution() {
+            const runBtn = document.getElementById('runBtn');
+            runBtn.disabled = true;
+            runBtn.innerText = "Running...";
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            activeKeys.clear(); 
+            canvas.focus();     
+            isRunning = true;
+            
+            await runESharp();
+            
+            runBtn.disabled = false;
+            runBtn.innerText = "Run Program";
+            isRunning = false;
+        }
+
+        async function runESharp() {
+            const code = document.getElementById('editor').value;
+            const consoleOut = document.getElementById('console');
+            consoleOut.innerHTML = '';
+            
+            let variables = {};
+            let lines = code.split('\n');
+            let ip = 0;
+            let functions = {};
+            let callStack = [];
+
+            for(let j=0; j<lines.length; j++) {
+                let funcMatch = lines[j].trim().match(/^create function (\w+)$/);
+                if (funcMatch) functions[funcMatch[1]] = j;
+            }
+
+            function print(text, type = 'normal') {
+                const span = document.createElement('div');
+                span.textContent = text;
+                if (type === 'error') span.className = 'error';
+                if (type === 'system') span.className = 'system';
+                consoleOut.appendChild(span);
+                consoleOut.scrollTop = consoleOut.scrollHeight;
+            }
+
+            function getValue(valStr) {
+                valStr = valStr.trim();
+                if (valStr === "true") return true;
+                if (valStr === "false") return false;
+                if (!isNaN(valStr)) return Number(valStr);
+                if (valStr.startsWith('"') && valStr.endsWith('"')) return valStr.substring(1, valStr.length - 1);
+                if (variables[valStr] !== undefined) return variables[valStr].value;
+                throw new Error(`Unknown variable or value: '${valStr}'`);
+            }
+
+            try {
+                print("--- Program Running ---", 'system');
+
+                while (ip < lines.length && isRunning) {
+                    let line = lines[ip].trim();
+                    if (!line || line.startsWith('//')) { ip++; continue; }
+
+                    // --- NEW: Map Memory Allocation ---
+                    let mapCreateMatch = line.match(/^create tilemap (\w+)$/);
+                    if (mapCreateMatch) {
+                        let mapName = mapCreateMatch[1];
+                        let mapRows = [];
+                        let depth = 1;
+                        while(depth > 0) {
+                            ip++;
+                            if (ip >= lines.length) throw new Error("Missing 'end tilemap'");
+                            let tLine = lines[ip].trim();
+                            if (tLine === "end tilemap") {
+                                depth--;
+                            } else if (tLine.startsWith('"') && tLine.endsWith('"')) {
+                                mapRows.push(tLine.substring(1, tLine.length - 1));
+                            }
+                        }
+                        variables[mapName] = { type: 'tilemap', rows: mapRows };
+                        ip++; continue;
+                    }
+
+                    // --- NEW: Audio Trigger ---
+                    let playMatch = line.match(/^play sound "([^"]+)"$/);
+                    if (playMatch) {
+                        let audioUrl = playMatch[1];
+                        let audio = new Audio(audioUrl);
+                        audio.play().catch(e => print(`[Audio Error: Blocked by browser or invalid URL]`, 'system'));
+                        ip++; continue;
+                    }
+
+                    // --- NEW: Map Rendering ---
+                    let drawMapMatch = line.match(/^draw tilemap (\w+) at x (.+) y (.+)$/);
+                    if (drawMapMatch) {
+                        let mapName = drawMapMatch[1];
+                        let startX = getValue(drawMapMatch[2]);
+                        let startY = getValue(drawMapMatch[3]);
+                        let mapData = variables[mapName];
+                        
+                        if (!mapData || mapData.type !== 'tilemap') throw new Error(`'${mapName}' is not a tilemap.`);
+
+                        // Set tile size
+                        ctx.font = '30px Arial';
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'top';
+
+                        for (let r = 0; r < mapData.rows.length; r++) {
+                            // Array.from perfectly splits emojis without breaking them!
+                            let chars = Array.from(mapData.rows[r]); 
+                            for (let c = 0; c < chars.length; c++) {
+                                ctx.fillText(chars[c], startX + (c * 30), startY + (r * 30));
+                            }
+                        }
+                        ip++; continue;
+                    }
+
+                    let createFuncMatch = line.match(/^create function (\w+)$/);
+                    if (createFuncMatch) {
+                        let depth = 1;
+                        while(depth > 0) {
+                            ip++;
+                            if (lines[ip].trim().startsWith("create function ")) depth++;
+                            if (lines[ip].trim() === "end function") depth--;
+                        }
+                        ip++; continue;
+                    }
+
+                    if (line === "end function") {
+                        ip = callStack.pop(); 
+                        ip++; continue;
+                    }
+
+                    let runMatch = line.match(/^run (\w+)$/);
+                    if (runMatch) {
+                        callStack.push(ip); 
+                        ip = functions[runMatch[1]] + 1; 
+                        continue;
+                    }
+
+                    let setObjMatch = line.match(/^set object (\w+) to (.+) at x (.+) y (.+)$/);
+                    if (setObjMatch) {
+                        variables[setObjMatch[1]] = { type: 'object', sprite: getValue(setObjMatch[2]), x: getValue(setObjMatch[3]), y: getValue(setObjMatch[4]) };
+                        ip++; continue;
+                    }
+
+                    let drawObjMatch = line.match(/^draw object (\w+)$/);
+                    if (drawObjMatch) {
+                        let obj = variables[drawObjMatch[1]];
+                        ctx.font = '40px Arial';
+                        ctx.textBaseline = 'alphabetic';
+                        ctx.fillText(obj.sprite, obj.x, obj.y);
+                        ip++; continue;
+                    }
+                    
+                    let drawTextMatch = line.match(/^draw text (.+) at x (.+) y (.+)$/);
+                    if (drawTextMatch) {
+                        let textVal = getValue(drawTextMatch[1]), x = getValue(drawTextMatch[2]), y = getValue(drawTextMatch[3]);
+                        ctx.font = '24px Arial'; ctx.fillStyle = '#ffffff'; ctx.fillText(textVal, x, y);
+                        ip++; continue;
+                    }
+
+                    let moveTowardMatch = line.match(/^move (\w+) towards (\w+) by (\d+)$/);
+                    if (moveTowardMatch) {
+                        let obj1 = variables[moveTowardMatch[1]], obj2 = variables[moveTowardMatch[2]], speed = Number(moveTowardMatch[3]);
+                        let dx = obj2.x - obj1.x, dy = obj2.y - obj1.y;
+                        let distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance > speed) { obj1.x += (dx / distance) * speed; obj1.y += (dy / distance) * speed; } 
+                        else { obj1.x = obj2.x; obj1.y = obj2.y; }
+                        ip++; continue;
+                    }
+
+                    let objAddMatch = line.match(/^add (\d+) to (\w+)'s (x|y)$/);
+                    if (objAddMatch) { variables[objAddMatch[2]][objAddMatch[3]] += Number(objAddMatch[1]); ip++; continue; }
+
+                    let objSubMatch = line.match(/^subtract (\d+) from (\w+)'s (x|y)$/);
+                    if (objSubMatch) { variables[objSubMatch[2]][objSubMatch[3]] -= Number(objSubMatch[1]); ip++; continue; }
+
+                    if (line === "clear canvas") { ctx.clearRect(0, 0, canvas.width, canvas.height); ip++; continue; }
+                    if (line === "end program") { print("--- Program Terminated ---", 'system'); return; }
+
+                    let waitMsMatch = line.match(/^wait (\d+) milliseconds?$/);
+                    if (waitMsMatch) { await sleep(Number(waitMsMatch[1])); ip++; continue; }
+
+                    let setMatch = line.match(/^set (number|string|boolean) (\w+) to (.+)$/);
+                    if (setMatch) { variables[setMatch[2]] = { type: setMatch[1], value: getValue(setMatch[3]) }; ip++; continue; }
+                    
+                    if (line.startsWith('print ')) { print(getValue(line.substring(6))); ip++; continue; }
+
+                    let pressedMatch = line.match(/^if you pressed "([^"]+)"$/);
+                    if (pressedMatch) {
+                        let targetKey = pressedMatch[1].toLowerCase();
+                        if (!activeKeys.has(targetKey)) {
+                            let depth = 1;
+                            while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; }
+                        }
+                        ip++; continue;
+                    }
+                    
+                    let touchMatch = line.match(/^if (\w+) is touching (\w+)$/);
+                    if (touchMatch) {
+                        let obj1 = variables[touchMatch[1]], obj2 = variables[touchMatch[2]];
+                        let dx = obj1.x - obj2.x, dy = obj1.y - obj2.y;
+                        let distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance >= 35) {
+                            let depth = 1;
+                            while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; }
+                        }
+                        ip++; continue;
+                    }
+
+                    let boolIfMatch = line.match(/^if (.+) is (true|false)$/);
+                    if (boolIfMatch) {
+                        if (getValue(boolIfMatch[1]) !== (boolIfMatch[2] === "true")) {
+                            let depth = 1;
+                            while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; }
+                        }
+                        ip++; continue;
+                    }
+
+                    if (line === "end if") { ip++; continue; }
+
+                    let whileMatch = line.match(/^while (.+) is (true|false)$/);
+                    if (whileMatch) {
+                        if (getValue(whileMatch[1]) !== (whileMatch[2] === "true")) {
+                            let depth = 1;
+                            while (depth > 0) { ip++; if (lines[ip].trim().startsWith("while ")) depth++; if (lines[ip].trim() === "end while") depth--; }
+                        }
+                        ip++; continue;
+                    }
+                    if (line === "end while") { 
+                        let depth = 1;
+                        while (depth > 0) { ip--; if (lines[ip].trim() === "end while") depth++; if (lines[ip].trim().startsWith("while ")) depth--; }
+                        continue; 
+                    }
+
+                    throw new Error(`Unrecognized command: '${line}'`);
+                }
+                
+                print("--- Program Finished ---", 'system');
+            } catch (err) {
+                print(`Error on line ${ip + 1}: ${err.message}`, 'error');
+            }
+        }
+    </script>
 </body>
 </html>
