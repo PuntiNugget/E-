@@ -3,29 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E# Language Playground - Input Edition</title>
+    <title>E# Language Playground - Terminal Input</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { margin: 0; padding: 20px; background-color: #1e1e1e; color: #fff; display: flex; flex-direction: column; height: 100vh; }
-        h1 { margin-top: 0; color: #ff9800; }
+        h1 { margin-top: 0; color: #4af626; }
         .container { display: flex; gap: 20px; flex: 1; min-height: 0; }
         .panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
         .panel-header { background: #3c3c3c; padding: 10px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         textarea { flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 15px; resize: none; outline: none; line-height: 1.4; }
-        #console { flex: 1; padding: 15px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; white-space: pre-wrap; }
-        button { background: #ff9800; color: #000; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #e68a00; }
+        #console { flex: 1; padding: 15px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; white-space: pre-wrap; display: flex; flex-direction: column; }
+        button { background: #4af626; color: #000; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #3ce01d; }
         button:disabled { background: #555; cursor: not-allowed; color: #888; }
+        
+        /* Terminal Text Colors */
         .error { color: #ff7b72; }
         .success { color: #7ee787; }
         .system { color: #8b949e; font-style: italic; }
-        .highlight { color: #ff9800; font-weight: bold; }
+        .highlight { color: #4af626; font-weight: bold; }
+        
+        /* Custom Terminal Input Styling */
+        .input-line { display: flex; align-items: center; margin-top: 2px; }
+        .input-prompt { color: #4af626; margin-right: 8px; font-weight: bold; }
+        .terminal-input { flex: 1; background: transparent; border: none; color: #fff; font-family: 'Courier New', Courier, monospace; font-size: 15px; outline: none; padding: 0; }
     </style>
 </head>
 <body>
 
     <h1>E# Playground</h1>
-    <p>Now featuring: User Prompts and Program Termination!</p>
+    <p>Now featuring: In-Terminal Command Line Inputs!</p>
 
     <div class="container">
         <div class="panel">
@@ -36,7 +43,6 @@
             <textarea id="editor" spellcheck="false">
 print "Initializing User Registration..."
 
-// Ask the user for a string and a number
 ask user for string userName with "What is your name?"
 ask user for number userAge with "How old are you?"
 
@@ -49,7 +55,10 @@ if userAge is less than 18
 end if
 
 print "Access granted. Loading dashboard..."
-wait 2 seconds
+wait 1 second
+
+print "Press 'q' to logout."
+wait for key "q"
 
 print "Logging out..."
 end program
@@ -65,6 +74,7 @@ end program
     <script>
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+        // Wait for a specific key press
         function waitForKey(targetKey) {
             return new Promise(resolve => {
                 const listener = (event) => {
@@ -77,12 +87,49 @@ end program
             });
         }
 
+        // --- NEW: Wait for terminal input ---
+        function waitForTerminalInput() {
+            return new Promise(resolve => {
+                const consoleOut = document.getElementById('console');
+                
+                // Create the input UI
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'input-line';
+                
+                const promptSymbol = document.createElement('span');
+                promptSymbol.className = 'input-prompt';
+                promptSymbol.textContent = '>';
+                
+                const inputField = document.createElement('input');
+                inputField.type = 'text';
+                inputField.className = 'terminal-input';
+                inputField.autocomplete = 'off';
+                
+                lineDiv.appendChild(promptSymbol);
+                lineDiv.appendChild(inputField);
+                consoleOut.appendChild(lineDiv);
+                
+                // Auto-scroll and focus
+                consoleOut.scrollTop = consoleOut.scrollHeight;
+                inputField.focus();
+
+                // Listen for the Enter key
+                inputField.addEventListener('keydown', function(event) {
+                    if (event.key === 'Enter') {
+                        const answer = inputField.value;
+                        
+                        // Lock in the answer (replace input field with plain text)
+                        lineDiv.innerHTML = `<span class="input-prompt">></span><span style="color: #fff;">${answer}</span>`;
+                        resolve(answer);
+                    }
+                });
+            });
+        }
+
         async function startExecution() {
             const runBtn = document.getElementById('runBtn');
             runBtn.disabled = true;
             runBtn.innerText = "Running...";
-            
-            document.getElementById('console').focus();
             
             await runESharp();
             
@@ -127,27 +174,20 @@ end program
                     let line = lines[ip].trim();
                     if (!line || line.startsWith('//')) { ip++; continue; }
 
-                    // --- NEW: END PROGRAM ---
                     if (line === "end program") {
-                        print("--- Program Terminated by 'end program' ---", 'system');
-                        window.close(); // Attempts to close the tab
-                        print("[Browser Security Note: Scripts cannot close tabs they did not open.]", 'highlight');
-                        return; // This completely stops the while loop and exits the interpreter
+                        print("--- Program Terminated ---", 'system');
+                        return; 
                     }
 
-                    // --- NEW: USER PROMPTS ---
+                    // --- UPDATED: IN-TERMINAL PROMPT ---
                     let askMatch = line.match(/^ask user for (string|number) (\w+) with "([^"]+)"$/);
                     if (askMatch) {
                         let type = askMatch[1];
                         let varName = askMatch[2];
                         let promptMessage = askMatch[3];
 
-                        // Trigger the browser's native prompt
-                        let userInput = window.prompt(promptMessage);
-
-                        if (userInput === null) {
-                            throw new Error("User cancelled the input prompt.");
-                        }
+                        print(promptMessage, 'highlight'); // Print the question
+                        let userInput = await waitForTerminalInput(); // Pause and wait for the user to type in the terminal
 
                         // Type checking
                         if (type === 'number') {
@@ -163,10 +203,9 @@ end program
                         ip++; continue;
                     }
 
-                    // --- PREVIOUS FEATURES (Wait for key, Timers, Variables, If, Print) ---
                     let keyMatch = line.match(/^wait for key "(.+)"$/);
                     if (keyMatch) {
-                        print(`[System is waiting for you to press '${keyMatch[1]}']`, 'highlight');
+                        print(`[System is waiting for you to press '${keyMatch[1]}']`, 'system');
                         await waitForKey(keyMatch[1]);
                         ip++; continue;
                     }
