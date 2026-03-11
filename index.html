@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E# Language Playground - Tilemap Edition</title>
+    <title>E# Language Playground - Engine Edition</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { margin: 0; padding: 20px; background-color: #1e1e1e; color: #fff; display: flex; flex-direction: column; height: 100vh; }
@@ -27,16 +27,29 @@
         canvas { background-color: #111; border: 1px solid #333; outline: none; }
         canvas:focus { border: 1px solid #ff5e5e; }
         
-        .terminal-panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
+        .tabs-panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
+        .tab-buttons { display: flex; background: #1e1e1e; border-bottom: 1px solid #444; }
+        .tab-btn { flex: 1; padding: 10px; background: transparent; border: none; color: #888; cursor: pointer; font-weight: bold; }
+        .tab-btn.active { color: #ff5e5e; border-bottom: 2px solid #ff5e5e; background: #2d2d2d; }
+        .tab-content { flex: 1; display: none; overflow: hidden; }
+        .tab-content.active { display: flex; flex-direction: column; }
+        
         #console { flex: 1; padding: 15px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; white-space: pre-wrap; display: flex; flex-direction: column; }
         
+        .map-editor { flex: 1; display: flex; flex-direction: column; padding: 10px; align-items: center; }
+        .palette { display: flex; gap: 10px; margin-bottom: 10px; }
+        .palette-btn { font-size: 24px; background: none; border: 2px solid transparent; cursor: pointer; border-radius: 4px; padding: 2px; }
+        .palette-btn.selected { border: 2px solid #ff5e5e; background: #444; }
+        #map-grid { display: grid; grid-template-columns: repeat(13, 25px); grid-template-rows: repeat(8, 25px); gap: 1px; background: #444; border: 2px solid #555; }
+        .grid-cell { background: #111; display: flex; justify-content: center; align-items: center; font-size: 18px; cursor: pointer; user-select: none; }
+        .export-btn { margin-top: 15px; background: #238636; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
         button.run-btn { background: #ff5e5e; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         button.run-btn:hover { background: #e04848; }
         button.run-btn:disabled { background: #555; cursor: not-allowed; color: #888; }
         
         .error { color: #ff7b72; }
         .system { color: #8b949e; font-style: italic; }
-        .highlight { color: #ff5e5e; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -57,62 +70,65 @@ print "Welcome to the Arena! Use Arrow Keys to move."
 
 // Create our background level
 create tilemap arenaLevel
-    "🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫"
-    "🟫🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟫"
-    "🟫🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟫"
-    "🟫🟩🟩🟩🟩🟩🟫🟫🟩🟩🟩🟩🟩🟫"
-    "🟫🟩🟩🟩🟩🟩🟫🟫🟩🟩🟩🟩🟩🟫"
-    "🟫🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟫"
-    "🟫🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟫"
-    "🟫🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟫"
-    "🟫🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟫"
-    "🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫🟫"
+    "🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥"
+    "🟥🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟥"
+    "🟥🟩🟩🟥🟥🟩🟩🟩🟥🟥🟩🟩🟥"
+    "🟥🟩🟩🟥🟥🟩🟩🟩🟥🟥🟩🟩🟥"
+    "🟥🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟥"
+    "🟥🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟥"
+    "🟥🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟥"
+    "🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥"
 end tilemap
 
-set object player to "🚀" at x 200 y 150
-set object enemy to "👾" at x 50 y 50
+set object player to "👽" at x 180 y 150
 set boolean gameIsRunning to true
 
 while gameIsRunning is true
-    
-    run handlePlayerInput
-
-    move enemy towards player by 2
-
-    if player is touching enemy
-        // Play a sound when caught!
-        play sound "https://actions.google.com/sounds/v1/retro_game/retro_coin_pickup.ogg"
-        set boolean gameIsRunning to false
-    end if
-
     clear canvas
     
-    // Draw the tilemap first so it's in the background
-    draw tilemap arenaLevel at x 0 y 25
+    // Draw the tilemap first
+    draw tilemap arenaLevel at x 5 y 30
     
-    // Then draw the objects on top
+    // Run movement and collision physics
+    run handlePlayerPhysics
+    
+    // Draw the player on top
     draw object player
-    draw object enemy
 
     wait 30 milliseconds
 end while
 
-draw text "CAUGHT!" at x 150 y 150
-print "Game Over!"
 end program
 
-create function handlePlayerInput
-    if you pressed "arrow up"
-        subtract 5 from player's y
-    end if
-    if you pressed "arrow down"
-        add 5 to player's y
-    end if
-    if you pressed "arrow left"
-        subtract 5 from player's x
-    end if
+// --- Physics Engine ---
+create function handlePlayerPhysics
     if you pressed "arrow right"
         add 5 to player's x
+        // If we hit a red block, undo the movement!
+        if player is touching tile "🟥" in arenaLevel
+            subtract 5 from player's x
+        end if
+    end if
+
+    if you pressed "arrow left"
+        subtract 5 from player's x
+        if player is touching tile "🟥" in arenaLevel
+            add 5 to player's x
+        end if
+    end if
+
+    if you pressed "arrow up"
+        subtract 5 from player's y
+        if player is touching tile "🟥" in arenaLevel
+            add 5 to player's y
+        end if
+    end if
+
+    if you pressed "arrow down"
+        add 5 to player's y
+        if player is touching tile "🟥" in arenaLevel
+            subtract 5 from player's y
+        end if
     end if
 end function
             </textarea>
@@ -127,14 +143,80 @@ end function
                 </div>
             </div>
 
-            <div class="terminal-panel">
-                <div class="panel-header">Live Terminal</div>
-                <div id="console" tabindex="0"></div>
+            <div class="tabs-panel">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab('terminal')">Live Terminal</button>
+                    <button class="tab-btn" onclick="switchTab('mapeditor')">Tilemap Editor</button>
+                </div>
+                
+                <div id="tab-terminal" class="tab-content active">
+                    <div id="console" tabindex="0"></div>
+                </div>
+
+                <div id="tab-mapeditor" class="tab-content">
+                    <div class="map-editor">
+                        <div class="palette">
+                            <button class="palette-btn selected" onclick="selectTile('🟩')">🟩</button>
+                            <button class="palette-btn" onclick="selectTile('🟥')">🟥</button>
+                            <button class="palette-btn" onclick="selectTile('🟫')">🟫</button>
+                            <button class="palette-btn" onclick="selectTile('🟦')">🟦</button>
+                            <button class="palette-btn" onclick="selectTile('⬛')">⬛</button>
+                        </div>
+                        <div id="map-grid"></div>
+                        <button class="export-btn" onclick="exportMap()">Copy Map Code to Clipboard</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        // --- UI & TABS ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+        }
+
+        // --- MAP EDITOR ---
+        let currentTile = '🟩';
+        const mapGrid = document.getElementById('map-grid');
+        
+        function selectTile(emoji) {
+            currentTile = emoji;
+            document.querySelectorAll('.palette-btn').forEach(btn => btn.classList.remove('selected'));
+            event.target.classList.add('selected');
+        }
+
+        let isDrawing = false;
+        for (let i = 0; i < 13 * 8; i++) {
+            let cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            cell.innerText = '🟩';
+            cell.addEventListener('mousedown', (e) => { isDrawing = true; e.target.innerText = currentTile; });
+            cell.addEventListener('mouseenter', (e) => { if (isDrawing) e.target.innerText = currentTile; });
+            mapGrid.appendChild(cell);
+        }
+        document.addEventListener('mouseup', () => isDrawing = false);
+
+        function exportMap() {
+            let cells = document.querySelectorAll('.grid-cell');
+            let output = "create tilemap myLevel\n";
+            for(let r=0; r<8; r++) {
+                let rowStr = '    "';
+                for(let c=0; c<13; c++) {
+                    rowStr += cells[r * 13 + c].innerText;
+                }
+                rowStr += '"\n';
+                output += rowStr;
+            }
+            output += "end tilemap";
+            navigator.clipboard.writeText(output);
+            alert("Map E# code copied! Paste it into your editor.");
+        }
+
+        // --- ENGINE ---
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
         const editor = document.getElementById('editor');
         const linterBar = document.getElementById('linter-bar');
@@ -150,11 +232,8 @@ end function
             if (keyName === "arrowleft") keyName = "arrow left";
             if (keyName === "arrowright") keyName = "arrow right";
             if (keyName === " ") keyName = "space";
-            
             activeKeys.add(keyName);
-            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].indexOf(e.code) > -1) {
-                e.preventDefault();
-            }
+            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].indexOf(e.code) > -1) e.preventDefault();
         });
         canvas.addEventListener('keyup', (e) => {
             let keyName = e.key.toLowerCase();
@@ -163,19 +242,10 @@ end function
             if (keyName === "arrowleft") keyName = "arrow left";
             if (keyName === "arrowright") keyName = "arrow right";
             if (keyName === " ") keyName = "space";
-            
             activeKeys.delete(keyName);
         });
 
         editor.addEventListener('input', checkSyntax);
-
-        function isRawValue(valStr) {
-            valStr = valStr.trim();
-            if (valStr === "true" || valStr === "false") return true;
-            if (!isNaN(valStr)) return true;
-            if (valStr.startsWith('"') && valStr.endsWith('"')) return true;
-            return false;
-        }
 
         function checkSyntax() {
             const lines = editor.value.split('\n');
@@ -195,20 +265,17 @@ end function
 
                 let isValidCommand = false;
 
-                // --- NEW: Tilemap Syntax Checking ---
                 if (inTilemap) {
-                    if (line === "end tilemap") {
-                        inTilemap = false;
-                    }
-                    isValidCommand = true; // We accept whatever strings are inside
+                    if (line === "end tilemap") inTilemap = false;
+                    isValidCommand = true; 
                 } else if (line.match(/^create tilemap (\w+)$/)) {
                     knownVariables.add(line.match(/^create tilemap (\w+)$/)[1]);
-                    inTilemap = true;
-                    isValidCommand = true;
+                    inTilemap = true; isValidCommand = true;
                 }
                 else if (line.match(/^draw tilemap (\w+) at x (.+) y (.+)$/)) isValidCommand = true;
-                // --- NEW: Sound Checking ---
                 else if (line.match(/^play sound "(.+)"$/)) isValidCommand = true;
+                // --- NEW TILE COLLISION LINTER ---
+                else if (line.match(/^if (\w+) is touching tile "([^"]+)" in (\w+)$/)) isValidCommand = true;
 
                 else {
                     let setMatch = line.match(/^set (number|string|boolean) (\w+) to (.+)$/);
@@ -222,7 +289,6 @@ end function
                     else if (setObjMatch) { knownVariables.add(setObjMatch[1]); isValidCommand = true; }
                     
                     else if (line.startsWith('print ')) isValidCommand = true;
-                    else if (line.match(/^ask user for (string|number) (\w+) with "([^"]+)"$/)) isValidCommand = true;
                     else if (line.match(/^add (\d+) to (\w+)$/)) isValidCommand = true;
                     else if (line.match(/^subtract (\d+) from (\w+)$/)) isValidCommand = true;
                     else if (line.match(/^add (\d+) to (\w+)'s (x|y)$/)) isValidCommand = true;
@@ -232,10 +298,8 @@ end function
                     else if (line.match(/^draw sprite (.+) at x (.+) y (.+)$/)) isValidCommand = true;
                     else if (line.match(/^draw text (.+) at x (.+) y (.+)$/)) isValidCommand = true;
                     else if (line === "clear canvas" || line === "clear terminal" || line === "end program" || line === "end if" || line === "end while") isValidCommand = true;
-                    else if (line.match(/^open window "([^"]+)"$/)) isValidCommand = true;
                     else if (line.match(/^wait (\d+) seconds?$/)) isValidCommand = true;
                     else if (line.match(/^wait (\d+) milliseconds?$/)) isValidCommand = true;
-                    else if (line.match(/^wait for key "(.+)"$/)) isValidCommand = true;
                     else if (line.match(/^if you pressed "(.+)"$/)) isValidCommand = true;
                     else if (line.match(/^if (.+) is (true|false)$/)) isValidCommand = true; 
                     else if (line.match(/^if (.+) is (equal to|greater than|less than) (.+)$/)) isValidCommand = true;
@@ -252,11 +316,6 @@ end function
                     hasError = true;
                     break;
                 }
-            }
-
-            if (!hasError && inTilemap) {
-                showError(lines.length, "Missing 'end tilemap'");
-                hasError = true;
             }
 
             if (!hasError) {
@@ -278,18 +337,11 @@ end function
 
         async function startExecution() {
             const runBtn = document.getElementById('runBtn');
-            runBtn.disabled = true;
-            runBtn.innerText = "Running...";
-            
+            runBtn.disabled = true; runBtn.innerText = "Running...";
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            activeKeys.clear(); 
-            canvas.focus();     
-            isRunning = true;
-            
+            activeKeys.clear(); canvas.focus(); isRunning = true;
             await runESharp();
-            
-            runBtn.disabled = false;
-            runBtn.innerText = "Run Program";
+            runBtn.disabled = false; runBtn.innerText = "Run Program";
             isRunning = false;
         }
 
@@ -310,22 +362,19 @@ end function
             }
 
             function print(text, type = 'normal') {
-                const span = document.createElement('div');
-                span.textContent = text;
+                const span = document.createElement('div'); span.textContent = text;
                 if (type === 'error') span.className = 'error';
                 if (type === 'system') span.className = 'system';
-                consoleOut.appendChild(span);
-                consoleOut.scrollTop = consoleOut.scrollHeight;
+                consoleOut.appendChild(span); consoleOut.scrollTop = consoleOut.scrollHeight;
             }
 
             function getValue(valStr) {
                 valStr = valStr.trim();
-                if (valStr === "true") return true;
-                if (valStr === "false") return false;
+                if (valStr === "true") return true; if (valStr === "false") return false;
                 if (!isNaN(valStr)) return Number(valStr);
                 if (valStr.startsWith('"') && valStr.endsWith('"')) return valStr.substring(1, valStr.length - 1);
                 if (variables[valStr] !== undefined) return variables[valStr].value;
-                throw new Error(`Unknown variable or value: '${valStr}'`);
+                throw new Error(`Unknown variable: '${valStr}'`);
             }
 
             try {
@@ -335,118 +384,115 @@ end function
                     let line = lines[ip].trim();
                     if (!line || line.startsWith('//')) { ip++; continue; }
 
-                    // --- NEW: Map Memory Allocation ---
                     let mapCreateMatch = line.match(/^create tilemap (\w+)$/);
                     if (mapCreateMatch) {
-                        let mapName = mapCreateMatch[1];
-                        let mapRows = [];
-                        let depth = 1;
+                        let mapName = mapCreateMatch[1]; let mapRows = []; let depth = 1;
                         while(depth > 0) {
                             ip++;
-                            if (ip >= lines.length) throw new Error("Missing 'end tilemap'");
                             let tLine = lines[ip].trim();
-                            if (tLine === "end tilemap") {
-                                depth--;
-                            } else if (tLine.startsWith('"') && tLine.endsWith('"')) {
-                                mapRows.push(tLine.substring(1, tLine.length - 1));
-                            }
+                            if (tLine === "end tilemap") depth--;
+                            else if (tLine.startsWith('"') && tLine.endsWith('"')) mapRows.push(tLine.substring(1, tLine.length - 1));
                         }
-                        variables[mapName] = { type: 'tilemap', rows: mapRows };
+                        variables[mapName] = { type: 'tilemap', rows: mapRows, lastX: 0, lastY: 0 };
                         ip++; continue;
                     }
 
-                    // --- NEW: Audio Trigger ---
-                    let playMatch = line.match(/^play sound "([^"]+)"$/);
-                    if (playMatch) {
-                        let audioUrl = playMatch[1];
-                        let audio = new Audio(audioUrl);
-                        audio.play().catch(e => print(`[Audio Error: Blocked by browser or invalid URL]`, 'system'));
-                        ip++; continue;
-                    }
-
-                    // --- NEW: Map Rendering ---
                     let drawMapMatch = line.match(/^draw tilemap (\w+) at x (.+) y (.+)$/);
                     if (drawMapMatch) {
-                        let mapName = drawMapMatch[1];
-                        let startX = getValue(drawMapMatch[2]);
-                        let startY = getValue(drawMapMatch[3]);
-                        let mapData = variables[mapName];
+                        let mapData = variables[drawMapMatch[1]];
+                        mapData.lastX = getValue(drawMapMatch[2]);
+                        mapData.lastY = getValue(drawMapMatch[3]);
                         
-                        if (!mapData || mapData.type !== 'tilemap') throw new Error(`'${mapName}' is not a tilemap.`);
-
-                        // Set tile size
-                        ctx.font = '30px Arial';
-                        ctx.textAlign = 'left';
-                        ctx.textBaseline = 'top';
-
+                        ctx.font = '30px Arial'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
                         for (let r = 0; r < mapData.rows.length; r++) {
-                            // Array.from perfectly splits emojis without breaking them!
                             let chars = Array.from(mapData.rows[r]); 
                             for (let c = 0; c < chars.length; c++) {
-                                ctx.fillText(chars[c], startX + (c * 30), startY + (r * 30));
+                                ctx.fillText(chars[c], mapData.lastX + (c * 30), mapData.lastY + (r * 30));
                             }
                         }
                         ip++; continue;
                     }
+
+                    // --- NEW: TILE COLLISION LOGIC ---
+                    let tileCollisionMatch = line.match(/^if (\w+) is touching tile "([^"]+)" in (\w+)$/);
+                    if (tileCollisionMatch) {
+                        let obj = variables[tileCollisionMatch[1]];
+                        let targetEmoji = tileCollisionMatch[2];
+                        let mapData = variables[tileCollisionMatch[3]];
+
+                        if (!obj || obj.type !== 'object') throw new Error(`Not an object.`);
+                        if (!mapData || mapData.type !== 'tilemap') throw new Error(`Not a tilemap.`);
+
+                        let isTouching = false;
+                        let tileSize = 30;
+                        let objSize = 25; // Hitbox size
+
+                        for (let r = 0; r < mapData.rows.length; r++) {
+                            let chars = Array.from(mapData.rows[r]);
+                            for (let c = 0; c < chars.length; c++) {
+                                if (chars[c] === targetEmoji) {
+                                    let tx = mapData.lastX + (c * tileSize);
+                                    let ty = mapData.lastY + (r * tileSize);
+                                    // AABB Collision Detection
+                                    if (obj.x < tx + tileSize && obj.x + objSize > tx &&
+                                        obj.y < ty + tileSize && obj.y + objSize > ty) {
+                                        isTouching = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (isTouching) break;
+                        }
+
+                        if (!isTouching) {
+                            let depth = 1;
+                            while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; }
+                        }
+                        ip++; continue;
+                    }
+
+                    let playMatch = line.match(/^play sound "([^"]+)"$/);
+                    if (playMatch) { new Audio(playMatch[1]).play().catch(e => {}); ip++; continue; }
 
                     let createFuncMatch = line.match(/^create function (\w+)$/);
                     if (createFuncMatch) {
                         let depth = 1;
-                        while(depth > 0) {
-                            ip++;
-                            if (lines[ip].trim().startsWith("create function ")) depth++;
-                            if (lines[ip].trim() === "end function") depth--;
-                        }
+                        while(depth > 0) { ip++; if (lines[ip].trim().startsWith("create function ")) depth++; if (lines[ip].trim() === "end function") depth--; }
                         ip++; continue;
                     }
 
-                    if (line === "end function") {
-                        ip = callStack.pop(); 
-                        ip++; continue;
-                    }
+                    if (line === "end function") { ip = callStack.pop(); ip++; continue; }
 
                     let runMatch = line.match(/^run (\w+)$/);
-                    if (runMatch) {
-                        callStack.push(ip); 
-                        ip = functions[runMatch[1]] + 1; 
-                        continue;
-                    }
+                    if (runMatch) { callStack.push(ip); ip = functions[runMatch[1]] + 1; continue; }
 
                     let setObjMatch = line.match(/^set object (\w+) to (.+) at x (.+) y (.+)$/);
-                    if (setObjMatch) {
-                        variables[setObjMatch[1]] = { type: 'object', sprite: getValue(setObjMatch[2]), x: getValue(setObjMatch[3]), y: getValue(setObjMatch[4]) };
-                        ip++; continue;
-                    }
+                    if (setObjMatch) { variables[setObjMatch[1]] = { type: 'object', sprite: getValue(setObjMatch[2]), x: getValue(setObjMatch[3]), y: getValue(setObjMatch[4]) }; ip++; continue; }
 
                     let drawObjMatch = line.match(/^draw object (\w+)$/);
                     if (drawObjMatch) {
                         let obj = variables[drawObjMatch[1]];
-                        ctx.font = '40px Arial';
-                        ctx.textBaseline = 'alphabetic';
+                        ctx.font = '30px Arial'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
                         ctx.fillText(obj.sprite, obj.x, obj.y);
                         ip++; continue;
                     }
                     
                     let drawTextMatch = line.match(/^draw text (.+) at x (.+) y (.+)$/);
                     if (drawTextMatch) {
-                        let textVal = getValue(drawTextMatch[1]), x = getValue(drawTextMatch[2]), y = getValue(drawTextMatch[3]);
-                        ctx.font = '24px Arial'; ctx.fillStyle = '#ffffff'; ctx.fillText(textVal, x, y);
+                        ctx.font = '24px Arial'; ctx.fillStyle = '#ffffff'; ctx.fillText(getValue(drawTextMatch[1]), getValue(drawTextMatch[2]), getValue(drawTextMatch[3]));
                         ip++; continue;
                     }
 
                     let moveTowardMatch = line.match(/^move (\w+) towards (\w+) by (\d+)$/);
                     if (moveTowardMatch) {
                         let obj1 = variables[moveTowardMatch[1]], obj2 = variables[moveTowardMatch[2]], speed = Number(moveTowardMatch[3]);
-                        let dx = obj2.x - obj1.x, dy = obj2.y - obj1.y;
-                        let distance = Math.sqrt(dx * dx + dy * dy);
-                        if (distance > speed) { obj1.x += (dx / distance) * speed; obj1.y += (dy / distance) * speed; } 
-                        else { obj1.x = obj2.x; obj1.y = obj2.y; }
+                        let dx = obj2.x - obj1.x, dy = obj2.y - obj1.y; let distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance > speed) { obj1.x += (dx / distance) * speed; obj1.y += (dy / distance) * speed; } else { obj1.x = obj2.x; obj1.y = obj2.y; }
                         ip++; continue;
                     }
 
                     let objAddMatch = line.match(/^add (\d+) to (\w+)'s (x|y)$/);
                     if (objAddMatch) { variables[objAddMatch[2]][objAddMatch[3]] += Number(objAddMatch[1]); ip++; continue; }
-
                     let objSubMatch = line.match(/^subtract (\d+) from (\w+)'s (x|y)$/);
                     if (objSubMatch) { variables[objSubMatch[2]][objSubMatch[3]] -= Number(objSubMatch[1]); ip++; continue; }
 
@@ -463,10 +509,8 @@ end function
 
                     let pressedMatch = line.match(/^if you pressed "([^"]+)"$/);
                     if (pressedMatch) {
-                        let targetKey = pressedMatch[1].toLowerCase();
-                        if (!activeKeys.has(targetKey)) {
-                            let depth = 1;
-                            while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; }
+                        if (!activeKeys.has(pressedMatch[1].toLowerCase())) {
+                            let depth = 1; while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; }
                         }
                         ip++; continue;
                     }
@@ -474,20 +518,9 @@ end function
                     let touchMatch = line.match(/^if (\w+) is touching (\w+)$/);
                     if (touchMatch) {
                         let obj1 = variables[touchMatch[1]], obj2 = variables[touchMatch[2]];
-                        let dx = obj1.x - obj2.x, dy = obj1.y - obj2.y;
-                        let distance = Math.sqrt(dx * dx + dy * dy);
-                        if (distance >= 35) {
-                            let depth = 1;
-                            while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; }
-                        }
-                        ip++; continue;
-                    }
-
-                    let boolIfMatch = line.match(/^if (.+) is (true|false)$/);
-                    if (boolIfMatch) {
-                        if (getValue(boolIfMatch[1]) !== (boolIfMatch[2] === "true")) {
-                            let depth = 1;
-                            while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; }
+                        let distance = Math.sqrt(Math.pow(obj1.x - obj2.x, 2) + Math.pow(obj1.y - obj2.y, 2));
+                        if (distance >= 30) {
+                            let depth = 1; while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; }
                         }
                         ip++; continue;
                     }
@@ -497,14 +530,12 @@ end function
                     let whileMatch = line.match(/^while (.+) is (true|false)$/);
                     if (whileMatch) {
                         if (getValue(whileMatch[1]) !== (whileMatch[2] === "true")) {
-                            let depth = 1;
-                            while (depth > 0) { ip++; if (lines[ip].trim().startsWith("while ")) depth++; if (lines[ip].trim() === "end while") depth--; }
+                            let depth = 1; while (depth > 0) { ip++; if (lines[ip].trim().startsWith("while ")) depth++; if (lines[ip].trim() === "end while") depth--; }
                         }
                         ip++; continue;
                     }
                     if (line === "end while") { 
-                        let depth = 1;
-                        while (depth > 0) { ip--; if (lines[ip].trim() === "end while") depth++; if (lines[ip].trim().startsWith("while ")) depth--; }
+                        let depth = 1; while (depth > 0) { ip--; if (lines[ip].trim() === "end while") depth++; if (lines[ip].trim().startsWith("while ")) depth--; }
                         continue; 
                     }
 
