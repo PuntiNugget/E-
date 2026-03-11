@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E# Language Playground - Graphics Edition</title>
+    <title>E# Language Playground - Interactive Edition</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { margin: 0; padding: 20px; background-color: #1e1e1e; color: #fff; display: flex; flex-direction: column; height: 100vh; }
@@ -14,7 +14,6 @@
         
         .container { display: flex; gap: 20px; flex: 1; min-height: 0; }
         
-        /* Left Column: Editor */
         .editor-panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
         .panel-header { background: #3c3c3c; padding: 10px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         textarea { flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 15px; resize: none; outline: none; line-height: 1.4; }
@@ -22,11 +21,12 @@
         .linter-good { background: #238636; color: #fff; }
         .linter-bad { background: #da3633; color: #fff; }
 
-        /* Right Column: Canvas & Terminal */
         .right-column { flex: 1; display: flex; flex-direction: column; gap: 20px; }
         .canvas-panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
         .canvas-container { flex: 1; display: flex; justify-content: center; align-items: center; background: #000; overflow: hidden; }
-        canvas { background-color: #111; border: 1px solid #333; }
+        /* Notice tabindex="0" added below so the canvas can capture keystrokes */
+        canvas { background-color: #111; border: 1px solid #333; outline: none; }
+        canvas:focus { border: 1px solid #ff5e5e; }
         
         .terminal-panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
         #console { flex: 1; padding: 15px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; white-space: pre-wrap; display: flex; flex-direction: column; }
@@ -59,29 +59,48 @@
                 <button id="runBtn" class="run-btn" onclick="startExecution()">Run Program</button>
             </div>
             <textarea id="editor" spellcheck="false">
-print "Initializing Graphics..."
+print "Click the canvas, then use W A S D to move!"
 
-ask user for string playerName with "What is your pilot name?"
+// Set up our player's starting position
+set number playerX to 180
+set number playerY to 150
+set boolean gameIsRunning to true
 
-// Combine strings together!
-combine "Welcome aboard, " and playerName into greetingMessage
-print greetingMessage
+// The Game Loop
+while gameIsRunning is true
+    
+    // Check for keyboard input
+    if you pressed "w"
+        subtract 5 from playerY
+    end if
+    
+    if you pressed "s"
+        add 5 to playerY
+    end if
+    
+    if you pressed "a"
+        subtract 5 from playerX
+    end if
+    
+    if you pressed "d"
+        add 5 to playerX
+    end if
 
-wait 1 second
-clear terminal
+    if you pressed "q"
+        print "Quitting game..."
+        set boolean gameIsRunning to false
+    end if
 
-print "Spawning alien ship..."
+    // Draw the frame
+    clear canvas
+    draw sprite "👾" at x playerX y playerY
 
-// Draw an emoji sprite to the canvas
-draw sprite "👾" at x 150 y 100
+    // Pause briefly so the computer doesn't crash from looping too fast!
+    wait 30 milliseconds
 
-wait 2 seconds
-print "Moving ship..."
+end while
 
-clear canvas
-draw sprite "👾" at x 250 y 200
-
-print "Done."
+print "Game Over."
 end program
             </textarea>
             <div id="linter-bar" class="linter-good">Syntax OK - Ready to Run</div>
@@ -89,9 +108,9 @@ end program
 
         <div class="right-column">
             <div class="canvas-panel">
-                <div class="panel-header">Game Canvas (400x300)</div>
+                <div class="panel-header">Game Canvas (Click to focus)</div>
                 <div class="canvas-container">
-                    <canvas id="gameCanvas" width="400" height="300"></canvas>
+                    <canvas id="gameCanvas" width="400" height="300" tabindex="0"></canvas>
                 </div>
             </div>
 
@@ -108,6 +127,20 @@ end program
         const linterBar = document.getElementById('linter-bar');
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+
+        // --- NEW: Real-Time Keyboard Tracker ---
+        const activeKeys = new Set();
+        // We listen on the canvas so you aren't accidentally typing in the editor
+        canvas.addEventListener('keydown', (e) => {
+            activeKeys.add(e.key.toLowerCase());
+            // Prevent arrow keys/spacebar from scrolling the page
+            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+        });
+        canvas.addEventListener('keyup', (e) => {
+            activeKeys.delete(e.key.toLowerCase());
+        });
 
         editor.addEventListener('input', checkSyntax);
 
@@ -145,13 +178,23 @@ end program
                     if (isRawValue(val) || knownVariables.has(val)) isValidCommand = true;
                     else { showError(i + 1, `Undeclared variable '${val}'`); hasError = true; break; }
                 }
+                // --- NEW MATH SHORTCUTS ---
+                else if (line.match(/^add (\d+) to (\w+)$/)) isValidCommand = true;
+                else if (line.match(/^subtract (\d+) from (\w+)$/)) isValidCommand = true;
+
                 else if (line.match(/^draw sprite (.+) at x (.+) y (.+)$/)) isValidCommand = true;
                 else if (line === "clear canvas" || line === "clear terminal" || line === "end program" || line === "end if" || line === "end while") isValidCommand = true;
                 else if (line.match(/^open window "([^"]+)"$/)) isValidCommand = true;
                 else if (line.match(/^wait (\d+) seconds?$/)) isValidCommand = true;
+                // --- NEW TIMER ---
+                else if (line.match(/^wait (\d+) milliseconds?$/)) isValidCommand = true;
                 else if (line.match(/^wait for key "(.+)"$/)) isValidCommand = true;
+                // --- NEW INPUT CHECK ---
+                else if (line.match(/^if you pressed "(.+)"$/)) isValidCommand = true;
+                else if (line.match(/^if (.+) is (true|false)$/)) isValidCommand = true; 
                 else if (line.match(/^if (.+) is (equal to|greater than|less than) (.+)$/)) isValidCommand = true;
                 else if (line.match(/^while (.+) is (equal to|greater than|less than) (.+)$/)) isValidCommand = true;
+                else if (line.match(/^while (.+) is (true|false)$/)) isValidCommand = true;
 
                 if (!isValidCommand) {
                     showError(i + 1, `Unrecognized command or syntax: '${line}'`);
@@ -217,18 +260,23 @@ end program
             });
         }
 
+        let isRunning = false; // Flag to stop execution manually if needed
+
         async function startExecution() {
             const runBtn = document.getElementById('runBtn');
             runBtn.disabled = true;
             runBtn.innerText = "Running...";
             
-            // Clear canvas automatically on new run
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            activeKeys.clear(); // Reset keys
+            canvas.focus();     // Automatically focus canvas for playing!
+            isRunning = true;
             
             await runESharp();
             
             runBtn.disabled = false;
             runBtn.innerText = "Run Program";
+            isRunning = false;
         }
 
         async function runESharp() {
@@ -263,11 +311,10 @@ end program
             try {
                 print("--- Program Running ---", 'system');
 
-                while (ip < lines.length) {
+                while (ip < lines.length && isRunning) {
                     let line = lines[ip].trim();
                     if (!line || line.startsWith('//')) { ip++; continue; }
 
-                    // --- NEW: COMBINE STRINGS ---
                     let combineMatch = line.match(/^combine (.+) and (.+) into (\w+)$/);
                     if (combineMatch) {
                         let val1 = getValue(combineMatch[1]);
@@ -276,14 +323,35 @@ end program
                         ip++; continue;
                     }
 
-                    // --- NEW: GRAPHICS COMMANDS ---
+                    // --- NEW MATH LOGIC ---
+                    let addMatch = line.match(/^add (\d+) to (\w+)$/);
+                    if (addMatch) {
+                        let amount = Number(addMatch[1]);
+                        if(variables[addMatch[2]] && variables[addMatch[2]].type === 'number') {
+                            variables[addMatch[2]].value += amount;
+                        } else {
+                            throw new Error(`Variable ${addMatch[2]} is not a number.`);
+                        }
+                        ip++; continue;
+                    }
+
+                    let subMatch = line.match(/^subtract (\d+) from (\w+)$/);
+                    if (subMatch) {
+                        let amount = Number(subMatch[1]);
+                        if(variables[subMatch[2]] && variables[subMatch[2]].type === 'number') {
+                            variables[subMatch[2]].value -= amount;
+                        } else {
+                            throw new Error(`Variable ${subMatch[2]} is not a number.`);
+                        }
+                        ip++; continue;
+                    }
+
                     let drawMatch = line.match(/^draw sprite (.+) at x (.+) y (.+)$/);
                     if (drawMatch) {
                         let sprite = getValue(drawMatch[1]);
                         let x = getValue(drawMatch[2]);
                         let y = getValue(drawMatch[3]);
-                        
-                        ctx.font = '40px Arial'; // Makes the emoji nice and big
+                        ctx.font = '40px Arial'; 
                         ctx.fillText(sprite, x, y);
                         ip++; continue;
                     }
@@ -338,6 +406,12 @@ end program
                         ip++; continue;
                     }
 
+                    let waitMsMatch = line.match(/^wait (\d+) milliseconds?$/);
+                    if (waitMsMatch) {
+                        await sleep(Number(waitMsMatch[1]));
+                        ip++; continue;
+                    }
+
                     let waitMatch = line.match(/^wait (\d+) seconds?$/);
                     if (waitMatch) {
                         await sleep(Number(waitMatch[1]) * 1000);
@@ -352,6 +426,44 @@ end program
 
                     if (line.startsWith('print ')) {
                         print(getValue(line.substring(6)));
+                        ip++; continue;
+                    }
+
+                    // --- NEW: YOU PRESSED LOGIC ---
+                    let pressedMatch = line.match(/^if you pressed "([^"]+)"$/);
+                    if (pressedMatch) {
+                        let targetKey = pressedMatch[1].toLowerCase();
+                        // Check our global set of active keys
+                        if (!activeKeys.has(targetKey)) {
+                            let depth = 1;
+                            while (depth > 0) {
+                                ip++;
+                                if (ip >= lines.length) throw new Error("Missing 'end if'");
+                                if (lines[ip].trim().startsWith("if ")) depth++;
+                                if (lines[ip].trim() === "end if") depth--;
+                            }
+                        }
+                        ip++; continue;
+                    }
+
+                    let boolIfMatch = line.match(/^if (.+) is (true|false)$/);
+                    if (boolIfMatch) {
+                        let v1 = getValue(boolIfMatch[1]);
+                        let targetBool = boolIfMatch[2] === "true";
+                        
+                        if (typeof v1 !== 'boolean') {
+                            throw new Error(`Cannot check if '${boolIfMatch[1]}' is true/false because it is not a boolean.`);
+                        }
+
+                        if (v1 !== targetBool) {
+                            let depth = 1;
+                            while (depth > 0) {
+                                ip++;
+                                if (ip >= lines.length) throw new Error("Missing 'end if'");
+                                if (lines[ip].trim().startsWith("if ")) depth++;
+                                if (lines[ip].trim() === "end if") depth--;
+                            }
+                        }
                         ip++; continue;
                     }
 
@@ -371,6 +483,36 @@ end program
                         ip++; continue;
                     }
                     if (line === "end if") { ip++; continue; }
+
+                    // --- NEW: WHILE LOOP SUPPORT (Simplified for game loops) ---
+                    let whileMatch = line.match(/^while (.+) is (true|false)$/);
+                    if (whileMatch) {
+                        let v1 = getValue(whileMatch[1]);
+                        let targetBool = whileMatch[2] === "true";
+
+                        if (v1 !== targetBool) {
+                            let depth = 1;
+                            while (depth > 0) {
+                                ip++;
+                                if (ip >= lines.length) throw new Error("Missing 'end while'");
+                                if (lines[ip].trim().startsWith("while ")) depth++;
+                                if (lines[ip].trim() === "end while") depth--;
+                            }
+                        }
+                        ip++; continue;
+                    }
+                    if (line === "end while") { 
+                        // Jump back to find the start of the while loop
+                        let depth = 1;
+                        while (depth > 0) {
+                            ip--;
+                            if (ip < 0) throw new Error("Missing 'while'");
+                            if (lines[ip].trim() === "end while") depth++;
+                            if (lines[ip].trim().startsWith("while ")) depth--;
+                        }
+                        // Keep ip at the while loop start to re-evaluate
+                        continue; 
+                    }
 
                     throw new Error(`Unrecognized command: '${line}'`);
                 }
