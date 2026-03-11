@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E# Language Playground - Interactive Edition</title>
+    <title>E# Language Playground - Full Engine</title>
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { margin: 0; padding: 20px; background-color: #1e1e1e; color: #fff; display: flex; flex-direction: column; height: 100vh; }
@@ -24,7 +24,6 @@
         .right-column { flex: 1; display: flex; flex-direction: column; gap: 20px; }
         .canvas-panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
         .canvas-container { flex: 1; display: flex; justify-content: center; align-items: center; background: #000; overflow: hidden; }
-        /* Notice tabindex="0" added below so the canvas can capture keystrokes */
         canvas { background-color: #111; border: 1px solid #333; outline: none; }
         canvas:focus { border: 1px solid #ff5e5e; }
         
@@ -36,7 +35,6 @@
         button.run-btn:disabled { background: #555; cursor: not-allowed; color: #888; }
         
         .error { color: #ff7b72; }
-        .success { color: #7ee787; }
         .system { color: #8b949e; font-style: italic; }
         .highlight { color: #ff5e5e; font-weight: bold; }
         
@@ -59,49 +57,65 @@
                 <button id="runBtn" class="run-btn" onclick="startExecution()">Run Program</button>
             </div>
             <textarea id="editor" spellcheck="false">
-print "Click the canvas, then use W A S D to move!"
+print "Alien Tag! Use Arrow Keys to escape."
 
-// Set up our player's starting position
-set number playerX to 180
-set number playerY to 150
+set object player to "🚀" at x 200 y 150
+set object enemy to "👾" at x 50 y 50
+set number score to 0
 set boolean gameIsRunning to true
 
-// The Game Loop
 while gameIsRunning is true
     
-    // Check for keyboard input
-    if you pressed "w"
-        subtract 5 from playerY
-    end if
-    
-    if you pressed "s"
-        add 5 to playerY
-    end if
-    
-    if you pressed "a"
-        subtract 5 from playerX
-    end if
-    
-    if you pressed "d"
-        add 5 to playerX
-    end if
+    run handlePlayerInput
 
-    if you pressed "q"
-        print "Quitting game..."
+    // Make the enemy track the player
+    move enemy towards player by 2
+    
+    // Add 1 to the score every frame you stay alive
+    add 1 to score
+    combine "Score: " and score into scoreText
+
+    // Check for collision!
+    if player is touching enemy
         set boolean gameIsRunning to false
     end if
 
     // Draw the frame
     clear canvas
-    draw sprite "👾" at x playerX y playerY
+    draw object player
+    draw object enemy
+    
+    // Draw our text UI
+    draw text scoreText at x 10 y 30
 
-    // Pause briefly so the computer doesn't crash from looping too fast!
     wait 30 milliseconds
-
 end while
 
-print "Game Over."
+clear canvas
+draw text "GAME OVER!" at x 130 y 150
+draw text scoreText at x 140 y 180
+
+print "Game Over! You were caught."
 end program
+
+// --- Custom Functions ---
+create function handlePlayerInput
+    if you pressed "arrow up"
+        subtract 5 from player's y
+    end if
+    
+    if you pressed "arrow down"
+        add 5 to player's y
+    end if
+    
+    if you pressed "arrow left"
+        subtract 5 from player's x
+    end if
+    
+    if you pressed "arrow right"
+        add 5 to player's x
+    end if
+end function
             </textarea>
             <div id="linter-bar" class="linter-good">Syntax OK - Ready to Run</div>
         </div>
@@ -128,18 +142,31 @@ end program
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // --- NEW: Real-Time Keyboard Tracker ---
         const activeKeys = new Set();
-        // We listen on the canvas so you aren't accidentally typing in the editor
+        
+        // --- NEW: Map special JS keys to GameMaker-style E# keys ---
         canvas.addEventListener('keydown', (e) => {
-            activeKeys.add(e.key.toLowerCase());
-            // Prevent arrow keys/spacebar from scrolling the page
+            let keyName = e.key.toLowerCase();
+            if (keyName === "arrowup") keyName = "arrow up";
+            if (keyName === "arrowdown") keyName = "arrow down";
+            if (keyName === "arrowleft") keyName = "arrow left";
+            if (keyName === "arrowright") keyName = "arrow right";
+            if (keyName === " ") keyName = "space";
+            
+            activeKeys.add(keyName);
             if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].indexOf(e.code) > -1) {
                 e.preventDefault();
             }
         });
         canvas.addEventListener('keyup', (e) => {
-            activeKeys.delete(e.key.toLowerCase());
+            let keyName = e.key.toLowerCase();
+            if (keyName === "arrowup") keyName = "arrow up";
+            if (keyName === "arrowdown") keyName = "arrow down";
+            if (keyName === "arrowleft") keyName = "arrow left";
+            if (keyName === "arrowright") keyName = "arrow right";
+            if (keyName === " ") keyName = "space";
+            
+            activeKeys.delete(keyName);
         });
 
         editor.addEventListener('input', checkSyntax);
@@ -155,7 +182,13 @@ end program
         function checkSyntax() {
             const lines = editor.value.split('\n');
             let knownVariables = new Set();
+            let knownFunctions = new Set();
             let hasError = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                let funcMatch = lines[i].trim().match(/^create function (\w+)$/);
+                if (funcMatch) knownFunctions.add(funcMatch[1]);
+            }
 
             for (let i = 0; i < lines.length; i++) {
                 let line = lines[i].trim();
@@ -167,34 +200,50 @@ end program
                 let randomMatch = line.match(/^set number (\w+) to random between (\d+) and (\d+)$/);
                 let askMatch = line.match(/^ask user for (string|number) (\w+) with "([^"]+)"$/);
                 let combineMatch = line.match(/^combine (.+) and (.+) into (\w+)$/);
+                let setObjMatch = line.match(/^set object (\w+) to (.+) at x (.+) y (.+)$/);
                 
                 if (setMatch) { knownVariables.add(setMatch[2]); isValidCommand = true; }
                 else if (randomMatch) { knownVariables.add(randomMatch[1]); isValidCommand = true; }
                 else if (askMatch) { knownVariables.add(askMatch[2]); isValidCommand = true; }
                 else if (combineMatch) { knownVariables.add(combineMatch[3]); isValidCommand = true; }
+                else if (setObjMatch) { knownVariables.add(setObjMatch[1]); isValidCommand = true; }
                 
                 else if (line.startsWith('print ')) {
                     let val = line.substring(6).trim();
                     if (isRawValue(val) || knownVariables.has(val)) isValidCommand = true;
                     else { showError(i + 1, `Undeclared variable '${val}'`); hasError = true; break; }
                 }
-                // --- NEW MATH SHORTCUTS ---
+                
                 else if (line.match(/^add (\d+) to (\w+)$/)) isValidCommand = true;
                 else if (line.match(/^subtract (\d+) from (\w+)$/)) isValidCommand = true;
-
+                else if (line.match(/^add (\d+) to (\w+)'s (x|y)$/)) isValidCommand = true;
+                else if (line.match(/^subtract (\d+) from (\w+)'s (x|y)$/)) isValidCommand = true;
+                else if (line.match(/^move (\w+) towards (\w+) by (\d+)$/)) isValidCommand = true;
+                else if (line.match(/^draw object (\w+)$/)) isValidCommand = true;
                 else if (line.match(/^draw sprite (.+) at x (.+) y (.+)$/)) isValidCommand = true;
+                // --- NEW: Canvas Text Linter ---
+                else if (line.match(/^draw text (.+) at x (.+) y (.+)$/)) isValidCommand = true;
+                
                 else if (line === "clear canvas" || line === "clear terminal" || line === "end program" || line === "end if" || line === "end while") isValidCommand = true;
                 else if (line.match(/^open window "([^"]+)"$/)) isValidCommand = true;
                 else if (line.match(/^wait (\d+) seconds?$/)) isValidCommand = true;
-                // --- NEW TIMER ---
                 else if (line.match(/^wait (\d+) milliseconds?$/)) isValidCommand = true;
                 else if (line.match(/^wait for key "(.+)"$/)) isValidCommand = true;
-                // --- NEW INPUT CHECK ---
                 else if (line.match(/^if you pressed "(.+)"$/)) isValidCommand = true;
                 else if (line.match(/^if (.+) is (true|false)$/)) isValidCommand = true; 
                 else if (line.match(/^if (.+) is (equal to|greater than|less than) (.+)$/)) isValidCommand = true;
+                // --- NEW: Collision Linter ---
+                else if (line.match(/^if (\w+) is touching (\w+)$/)) isValidCommand = true;
+                
                 else if (line.match(/^while (.+) is (equal to|greater than|less than) (.+)$/)) isValidCommand = true;
                 else if (line.match(/^while (.+) is (true|false)$/)) isValidCommand = true;
+                else if (line.match(/^create function (\w+)$/)) isValidCommand = true;
+                else if (line === "end function") isValidCommand = true;
+                else if (line.match(/^run (\w+)$/)) {
+                    let fName = line.match(/^run (\w+)$/)[1];
+                    if (knownFunctions.has(fName)) isValidCommand = true;
+                    else { showError(i + 1, `Unknown function: '${fName}'`); hasError = true; break; }
+                }
 
                 if (!isValidCommand) {
                     showError(i + 1, `Unrecognized command or syntax: '${line}'`);
@@ -221,7 +270,14 @@ end program
         function waitForKey(targetKey) {
             return new Promise(resolve => {
                 const listener = (event) => {
-                    if (event.key.toLowerCase() === targetKey.toLowerCase()) {
+                    let keyName = event.key.toLowerCase();
+                    if (keyName === "arrowup") keyName = "arrow up";
+                    if (keyName === "arrowdown") keyName = "arrow down";
+                    if (keyName === "arrowleft") keyName = "arrow left";
+                    if (keyName === "arrowright") keyName = "arrow right";
+                    if (keyName === " ") keyName = "space";
+
+                    if (keyName === targetKey.toLowerCase()) {
                         document.removeEventListener('keydown', listener);
                         resolve();
                     }
@@ -230,37 +286,7 @@ end program
             });
         }
 
-        function waitForTerminalInput() {
-            return new Promise(resolve => {
-                const consoleOut = document.getElementById('console');
-                const lineDiv = document.createElement('div');
-                lineDiv.className = 'input-line';
-                const promptSymbol = document.createElement('span');
-                promptSymbol.className = 'input-prompt';
-                promptSymbol.textContent = '>';
-                const inputField = document.createElement('input');
-                inputField.type = 'text';
-                inputField.className = 'terminal-input';
-                inputField.autocomplete = 'off';
-                
-                lineDiv.appendChild(promptSymbol);
-                lineDiv.appendChild(inputField);
-                consoleOut.appendChild(lineDiv);
-                
-                consoleOut.scrollTop = consoleOut.scrollHeight;
-                inputField.focus();
-
-                inputField.addEventListener('keydown', function(event) {
-                    if (event.key === 'Enter') {
-                        const answer = inputField.value;
-                        lineDiv.innerHTML = `<span class="input-prompt">></span><span style="color: #fff;">${answer}</span>`;
-                        resolve(answer);
-                    }
-                });
-            });
-        }
-
-        let isRunning = false; // Flag to stop execution manually if needed
+        let isRunning = false; 
 
         async function startExecution() {
             const runBtn = document.getElementById('runBtn');
@@ -268,8 +294,8 @@ end program
             runBtn.innerText = "Running...";
             
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            activeKeys.clear(); // Reset keys
-            canvas.focus();     // Automatically focus canvas for playing!
+            activeKeys.clear(); 
+            canvas.focus();     
             isRunning = true;
             
             await runESharp();
@@ -287,6 +313,13 @@ end program
             let variables = {};
             let lines = code.split('\n');
             let ip = 0;
+            let functions = {};
+            let callStack = [];
+
+            for(let j=0; j<lines.length; j++) {
+                let funcMatch = lines[j].trim().match(/^create function (\w+)$/);
+                if (funcMatch) functions[funcMatch[1]] = j;
+            }
 
             function print(text, type = 'normal') {
                 const span = document.createElement('div');
@@ -315,68 +348,132 @@ end program
                     let line = lines[ip].trim();
                     if (!line || line.startsWith('//')) { ip++; continue; }
 
+                    let createFuncMatch = line.match(/^create function (\w+)$/);
+                    if (createFuncMatch) {
+                        let depth = 1;
+                        while(depth > 0) {
+                            ip++;
+                            if (ip >= lines.length) throw new Error("Missing 'end function'");
+                            if (lines[ip].trim().startsWith("create function ")) depth++;
+                            if (lines[ip].trim() === "end function") depth--;
+                        }
+                        ip++; continue;
+                    }
+
+                    if (line === "end function") {
+                        if (callStack.length === 0) throw new Error("Unexpected 'end function'");
+                        ip = callStack.pop(); 
+                        ip++; continue;
+                    }
+
+                    let runMatch = line.match(/^run (\w+)$/);
+                    if (runMatch) {
+                        let fName = runMatch[1];
+                        if (functions[fName] === undefined) throw new Error(`Function '${fName}' does not exist.`);
+                        callStack.push(ip); 
+                        ip = functions[fName] + 1; 
+                        continue;
+                    }
+
+                    let setObjMatch = line.match(/^set object (\w+) to (.+) at x (.+) y (.+)$/);
+                    if (setObjMatch) {
+                        variables[setObjMatch[1]] = { type: 'object', sprite: getValue(setObjMatch[2]), x: getValue(setObjMatch[3]), y: getValue(setObjMatch[4]) };
+                        ip++; continue;
+                    }
+
+                    let drawObjMatch = line.match(/^draw object (\w+)$/);
+                    if (drawObjMatch) {
+                        let obj = variables[drawObjMatch[1]];
+                        if (!obj || obj.type !== 'object') throw new Error(`'${drawObjMatch[1]}' is not an object.`);
+                        ctx.font = '40px Arial';
+                        ctx.fillStyle = '#ffffff'; 
+                        ctx.fillText(obj.sprite, obj.x, obj.y);
+                        ip++; continue;
+                    }
+                    
+                    // --- NEW: Draw Text ---
+                    let drawTextMatch = line.match(/^draw text (.+) at x (.+) y (.+)$/);
+                    if (drawTextMatch) {
+                        let textVal = getValue(drawTextMatch[1]);
+                        let x = getValue(drawTextMatch[2]);
+                        let y = getValue(drawTextMatch[3]);
+                        ctx.font = '24px Arial';
+                        ctx.fillStyle = '#ffffff'; // White text
+                        ctx.fillText(textVal, x, y);
+                        ip++; continue;
+                    }
+
+                    let moveTowardMatch = line.match(/^move (\w+) towards (\w+) by (\d+)$/);
+                    if (moveTowardMatch) {
+                        let obj1 = variables[moveTowardMatch[1]];
+                        let obj2 = variables[moveTowardMatch[2]];
+                        let speed = Number(moveTowardMatch[3]);
+                        
+                        if (!obj1 || obj1.type !== 'object') throw new Error(`'${moveTowardMatch[1]}' is not an object.`);
+                        if (!obj2 || obj2.type !== 'object') throw new Error(`'${moveTowardMatch[2]}' is not an object.`);
+
+                        let dx = obj2.x - obj1.x;
+                        let dy = obj2.y - obj1.y;
+                        let distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance > speed) {
+                            obj1.x += (dx / distance) * speed;
+                            obj1.y += (dy / distance) * speed;
+                        } else {
+                            obj1.x = obj2.x; 
+                            obj1.y = obj2.y;
+                        }
+                        ip++; continue;
+                    }
+
+                    let objAddMatch = line.match(/^add (\d+) to (\w+)'s (x|y)$/);
+                    if (objAddMatch) {
+                        let amount = Number(objAddMatch[1]), objName = objAddMatch[2], prop = objAddMatch[3];
+                        if (variables[objName] && variables[objName].type === 'object') { variables[objName][prop] += amount; } else { throw new Error(`'${objName}' is not an object.`); }
+                        ip++; continue;
+                    }
+
+                    let objSubMatch = line.match(/^subtract (\d+) from (\w+)'s (x|y)$/);
+                    if (objSubMatch) {
+                        let amount = Number(objSubMatch[1]), objName = objSubMatch[2], prop = objSubMatch[3];
+                        if (variables[objName] && variables[objName].type === 'object') { variables[objName][prop] -= amount; } else { throw new Error(`'${objName}' is not an object.`); }
+                        ip++; continue;
+                    }
+
                     let combineMatch = line.match(/^combine (.+) and (.+) into (\w+)$/);
                     if (combineMatch) {
-                        let val1 = getValue(combineMatch[1]);
-                        let val2 = getValue(combineMatch[2]);
+                        let val1 = getValue(combineMatch[1]), val2 = getValue(combineMatch[2]);
                         variables[combineMatch[3]] = { type: 'string', value: String(val1) + String(val2) };
                         ip++; continue;
                     }
 
-                    // --- NEW MATH LOGIC ---
                     let addMatch = line.match(/^add (\d+) to (\w+)$/);
                     if (addMatch) {
                         let amount = Number(addMatch[1]);
-                        if(variables[addMatch[2]] && variables[addMatch[2]].type === 'number') {
-                            variables[addMatch[2]].value += amount;
-                        } else {
-                            throw new Error(`Variable ${addMatch[2]} is not a number.`);
-                        }
+                        if(variables[addMatch[2]] && variables[addMatch[2]].type === 'number') { variables[addMatch[2]].value += amount; } else { throw new Error(`Variable ${addMatch[2]} is not a number.`); }
                         ip++; continue;
                     }
 
                     let subMatch = line.match(/^subtract (\d+) from (\w+)$/);
                     if (subMatch) {
                         let amount = Number(subMatch[1]);
-                        if(variables[subMatch[2]] && variables[subMatch[2]].type === 'number') {
-                            variables[subMatch[2]].value -= amount;
-                        } else {
-                            throw new Error(`Variable ${subMatch[2]} is not a number.`);
-                        }
+                        if(variables[subMatch[2]] && variables[subMatch[2]].type === 'number') { variables[subMatch[2]].value -= amount; } else { throw new Error(`Variable ${subMatch[2]} is not a number.`); }
                         ip++; continue;
                     }
 
                     let drawMatch = line.match(/^draw sprite (.+) at x (.+) y (.+)$/);
                     if (drawMatch) {
-                        let sprite = getValue(drawMatch[1]);
-                        let x = getValue(drawMatch[2]);
-                        let y = getValue(drawMatch[3]);
-                        ctx.font = '40px Arial'; 
-                        ctx.fillText(sprite, x, y);
+                        let sprite = getValue(drawMatch[1]), x = getValue(drawMatch[2]), y = getValue(drawMatch[3]);
+                        ctx.font = '40px Arial'; ctx.fillStyle = '#ffffff'; ctx.fillText(sprite, x, y);
                         ip++; continue;
                     }
 
-                    if (line === "clear canvas") {
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        ip++; continue;
-                    }
-
-                    if (line === "clear terminal") {
-                        consoleOut.innerHTML = '';
-                        ip++; continue;
-                    }
+                    if (line === "clear canvas") { ctx.clearRect(0, 0, canvas.width, canvas.height); ip++; continue; }
+                    if (line === "clear terminal") { consoleOut.innerHTML = ''; ip++; continue; }
 
                     let openMatch = line.match(/^open window "([^"]+)"$/);
-                    if (openMatch) {
-                        window.open(openMatch[1], '_blank');
-                        print(`[System opened new window: ${openMatch[1]}]`, 'system');
-                        ip++; continue;
-                    }
-
-                    if (line === "end program") {
-                        print("--- Program Terminated ---", 'system');
-                        return; 
-                    }
+                    if (openMatch) { window.open(openMatch[1], '_blank'); print(`[System opened new window: ${openMatch[1]}]`, 'system'); ip++; continue; }
+                    if (line === "end program") { print("--- Program Terminated ---", 'system'); return; }
 
                     let randomMatch = line.match(/^set number (\w+) to random between (\d+) and (\d+)$/);
                     if (randomMatch) {
@@ -388,53 +485,56 @@ end program
                     let askMatch = line.match(/^ask user for (string|number) (\w+) with "([^"]+)"$/);
                     if (askMatch) {
                         print(askMatch[3], 'highlight');
-                        let userInput = await waitForTerminalInput();
+                        let userInput = await waitForTerminalInput(); // Await input here (simulated)
                         if (askMatch[1] === 'number') {
                             let numVal = Number(userInput);
-                            if (isNaN(numVal) || userInput.trim() === "") throw new Error(`Expected a number for '${askMatch[2]}'.`);
+                            if (isNaN(numVal) || userInput.trim() === "") throw new Error(`Expected a number.`);
                             variables[askMatch[2]] = { type: 'number', value: numVal };
-                        } else {
-                            variables[askMatch[2]] = { type: 'string', value: userInput };
-                        }
+                        } else { variables[askMatch[2]] = { type: 'string', value: userInput }; }
                         ip++; continue;
                     }
 
                     let keyMatch = line.match(/^wait for key "(.+)"$/);
-                    if (keyMatch) {
-                        print(`[System is waiting for you to press '${keyMatch[1]}']`, 'system');
-                        await waitForKey(keyMatch[1]);
-                        ip++; continue;
-                    }
+                    if (keyMatch) { print(`[System waiting for '${keyMatch[1]}']`, 'system'); await waitForKey(keyMatch[1]); ip++; continue; }
 
                     let waitMsMatch = line.match(/^wait (\d+) milliseconds?$/);
-                    if (waitMsMatch) {
-                        await sleep(Number(waitMsMatch[1]));
-                        ip++; continue;
-                    }
-
+                    if (waitMsMatch) { await sleep(Number(waitMsMatch[1])); ip++; continue; }
                     let waitMatch = line.match(/^wait (\d+) seconds?$/);
-                    if (waitMatch) {
-                        await sleep(Number(waitMatch[1]) * 1000);
-                        ip++; continue;
-                    }
+                    if (waitMatch) { await sleep(Number(waitMatch[1]) * 1000); ip++; continue; }
 
                     let setMatch = line.match(/^set (number|string|boolean) (\w+) to (.+)$/);
-                    if (setMatch) {
-                        variables[setMatch[2]] = { type: setMatch[1], value: getValue(setMatch[3]) };
-                        ip++; continue;
-                    }
+                    if (setMatch) { variables[setMatch[2]] = { type: setMatch[1], value: getValue(setMatch[3]) }; ip++; continue; }
+                    if (line.startsWith('print ')) { print(getValue(line.substring(6))); ip++; continue; }
 
-                    if (line.startsWith('print ')) {
-                        print(getValue(line.substring(6)));
-                        ip++; continue;
-                    }
-
-                    // --- NEW: YOU PRESSED LOGIC ---
                     let pressedMatch = line.match(/^if you pressed "([^"]+)"$/);
                     if (pressedMatch) {
                         let targetKey = pressedMatch[1].toLowerCase();
-                        // Check our global set of active keys
                         if (!activeKeys.has(targetKey)) {
+                            let depth = 1;
+                            while (depth > 0) {
+                                ip++;
+                                if (ip >= lines.length) throw new Error("Missing 'end if'");
+                                if (lines[ip].trim().startsWith("if ")) depth++;
+                                if (lines[ip].trim() === "end if") depth--;
+                            }
+                        }
+                        ip++; continue;
+                    }
+                    
+                    // --- NEW: Collision Check ---
+                    let touchMatch = line.match(/^if (\w+) is touching (\w+)$/);
+                    if (touchMatch) {
+                        let obj1 = variables[touchMatch[1]];
+                        let obj2 = variables[touchMatch[2]];
+                        if (!obj1 || obj1.type !== 'object') throw new Error(`'${touchMatch[1]}' is not an object.`);
+                        if (!obj2 || obj2.type !== 'object') throw new Error(`'${touchMatch[2]}' is not an object.`);
+
+                        let dx = obj1.x - obj2.x;
+                        let dy = obj1.y - obj2.y;
+                        let distance = Math.sqrt(dx * dx + dy * dy);
+
+                        let isTouching = distance < 35; // 35 pixels is about the size of our emojis
+                        if (!isTouching) {
                             let depth = 1;
                             while (depth > 0) {
                                 ip++;
@@ -448,13 +548,8 @@ end program
 
                     let boolIfMatch = line.match(/^if (.+) is (true|false)$/);
                     if (boolIfMatch) {
-                        let v1 = getValue(boolIfMatch[1]);
-                        let targetBool = boolIfMatch[2] === "true";
-                        
-                        if (typeof v1 !== 'boolean') {
-                            throw new Error(`Cannot check if '${boolIfMatch[1]}' is true/false because it is not a boolean.`);
-                        }
-
+                        let v1 = getValue(boolIfMatch[1]), targetBool = boolIfMatch[2] === "true";
+                        if (typeof v1 !== 'boolean') throw new Error(`Not a boolean.`);
                         if (v1 !== targetBool) {
                             let depth = 1;
                             while (depth > 0) {
@@ -484,12 +579,9 @@ end program
                     }
                     if (line === "end if") { ip++; continue; }
 
-                    // --- NEW: WHILE LOOP SUPPORT (Simplified for game loops) ---
                     let whileMatch = line.match(/^while (.+) is (true|false)$/);
                     if (whileMatch) {
-                        let v1 = getValue(whileMatch[1]);
-                        let targetBool = whileMatch[2] === "true";
-
+                        let v1 = getValue(whileMatch[1]), targetBool = whileMatch[2] === "true";
                         if (v1 !== targetBool) {
                             let depth = 1;
                             while (depth > 0) {
@@ -502,7 +594,6 @@ end program
                         ip++; continue;
                     }
                     if (line === "end while") { 
-                        // Jump back to find the start of the while loop
                         let depth = 1;
                         while (depth > 0) {
                             ip--;
@@ -510,7 +601,6 @@ end program
                             if (lines[ip].trim() === "end while") depth++;
                             if (lines[ip].trim().startsWith("while ")) depth--;
                         }
-                        // Keep ip at the while loop start to re-evaluate
                         continue; 
                     }
 
