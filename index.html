@@ -66,7 +66,7 @@
                 <button id="runBtn" class="run-btn" onclick="startExecution()">Run Program</button>
             </div>
             <textarea id="editor" spellcheck="false">
-print "Hide behind the red walls so the enemy can't see you!"
+print "Press SPACE to shoot the enemy!"
 
 create tilemap arenaLevel
     "🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥"
@@ -79,8 +79,12 @@ create tilemap arenaLevel
     "🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥"
 end tilemap
 
-set object player to "👽" at x 180 y 180
+set object player to "👽" at x 180 y 200
 set object enemy to "👾" at x 180 y 50
+// Keep the laser hidden off-screen to start
+set object laser to "⚡" at x -100 y -100
+
+set boolean laserFired to false
 set boolean gameIsRunning to true
 
 while gameIsRunning is true
@@ -89,11 +93,12 @@ while gameIsRunning is true
     
     run handlePlayerPhysics
 
-    // --- NEW: RAYCAST LINE OF SIGHT ---
-    // The enemy only moves if it CANNOT see a red block between you and it
+    // Line of sight for enemy
     if raycast from enemy to player does not hit "🟥" in arenaLevel
         move enemy towards player by 2
     end if
+    
+    run handleShooting
     
     draw object player
     draw object enemy
@@ -128,6 +133,35 @@ create function handlePlayerPhysics
         add 5 to player's y
         if player is touching tile "🟥" in arenaLevel
             subtract 5 from player's y
+        end if
+    end if
+end function
+
+create function handleShooting
+    // 1. Fire the laser if it isn't already flying
+    if you pressed "space"
+        if laserFired is false
+            set laserFired to true
+            set laser's x to player's x
+            set laser's y to player's y
+        end if
+    end if
+
+    // 2. Animate the laser moving up the screen
+    if laserFired is true
+        subtract 15 from laser's y
+        draw object laser
+        
+        // Did we hit the alien?
+        if laser is touching enemy
+            set enemy's x to -1000
+            set laserFired to false
+            print "ENEMY DESTROYED! YOU WIN!"
+        end if
+        
+        // Reset the laser if it goes off the top of the screen
+        if laser's y is less than 0
+            set laserFired to false
         end if
     end if
 end function
@@ -271,9 +305,10 @@ end function
                 else if (line.match(/^draw tilemap (\w+) at x (.+) y (.+)$/)) isValidCommand = true;
                 else if (line.match(/^play sound "(.+)"$/)) isValidCommand = true;
                 else if (line.match(/^if (\w+) is touching tile "([^"]+)" in (\w+)$/)) isValidCommand = true;
-                
-                // --- NEW RAYCAST LINTER ---
                 else if (line.match(/^if raycast from (\w+) to (\w+) (hits|does not hit) "([^"]+)" in (\w+)$/)) isValidCommand = true;
+                
+                // --- NEW PROPERTY SETTER ---
+                else if (line.match(/^set (\w+)'s (x|y) to (.+)$/)) isValidCommand = true;
 
                 else {
                     let setMatch = line.match(/^set (number|string|boolean) (\w+) to (.+)$/);
@@ -371,6 +406,11 @@ end function
                 if (valStr === "true") return true; if (valStr === "false") return false;
                 if (!isNaN(valStr)) return Number(valStr);
                 if (valStr.startsWith('"') && valStr.endsWith('"')) return valStr.substring(1, valStr.length - 1);
+                
+                // --- NEW PROPERTY LOOKUPS ---
+                if (valStr.endsWith("'s x")) { let obj = valStr.replace("'s x", ""); return variables[obj].x; }
+                if (valStr.endsWith("'s y")) { let obj = valStr.replace("'s y", ""); return variables[obj].y; }
+
                 if (variables[valStr] !== undefined) return variables[valStr].value;
                 throw new Error(`Unknown variable: '${valStr}'`);
             }
@@ -411,7 +451,13 @@ end function
                         ip++; continue;
                     }
 
-                    // --- NEW: RAYCAST LOGIC ---
+                    // --- NEW SET PROPERTY LOGIC ---
+                    let setPropMatch = line.match(/^set (\w+)'s (x|y) to (.+)$/);
+                    if (setPropMatch) {
+                        variables[setPropMatch[1]][setPropMatch[2]] = getValue(setPropMatch[3]);
+                        ip++; continue;
+                    }
+
                     let raycastMatch = line.match(/^if raycast from (\w+) to (\w+) (hits|does not hit) "([^"]+)" in (\w+)$/);
                     if (raycastMatch) {
                         let obj1 = variables[raycastMatch[1]], obj2 = variables[raycastMatch[2]];
@@ -420,7 +466,6 @@ end function
                         if (!obj1 || !obj2 || obj1.type !== 'object' || obj2.type !== 'object') throw new Error(`Raycast requires objects.`);
                         if (!mapData || mapData.type !== 'tilemap') throw new Error(`Not a tilemap.`);
 
-                        // Center the raycast points on the emojis
                         let startX = obj1.x + 15, startY = obj1.y + 15;
                         let endX = obj2.x + 15, endY = obj2.y + 15;
 
