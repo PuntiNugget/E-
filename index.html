@@ -320,7 +320,7 @@ print "hello, world!"
             for (let i = 0; i < lines.length; i++) {
                 let line = lines[i].trim();
                 if (!line || line.startsWith('//')) continue;
-
+                
                 let isValidCommand = false;
 
                 if (inTilemap) {
@@ -468,7 +468,7 @@ print "hello, world!"
                         mapData.lastX = getValue(drawMapMatch[2]);
                         mapData.lastY = getValue(drawMapMatch[3]);
                         
-                        ctx.font = '30px Arial'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+                        ctx.font = '30px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
                         for (let r = 0; r < mapData.rows.length; r++) {
                             let chars = Array.from(mapData.rows[r]); 
                             for (let c = 0; c < chars.length; c++) {
