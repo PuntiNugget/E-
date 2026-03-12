@@ -16,14 +16,16 @@
 </head>
 <body>
 
-    <h1>E# Language Reference (Engine Edition)</h1>
-    <p>Welcome to the complete documentation for E# (English Sharp) Game Engine Edition! Build 2D worlds simply by typing.</p>
+    <h1>E# Language Reference (Combat Engine Edition)</h1>
+    <p>Welcome to the complete documentation for E# (English Sharp) Game Engine Edition! Build 2D action games simply by typing.</p>
 
-    <h2>1. Variables & Objects</h2>
+    <h2>1. Variables & Object Manipulation</h2>
     <ul>
         <li><strong>Create a Variable:</strong> <code>set [number|string|boolean] [name] to [value]</code></li>
-        <li><strong>Create Object:</strong> <code>set object [name] to [sprite] at x [num] y [num]</code>
-            <div class="example">set object player to "👽" at x 150 y 150</div>
+        <li><strong>Create Object:</strong> <code>set object [name] to [sprite] at x [num] y [num]</code></li>
+        <li><strong>Set Exact Coordinates:</strong> <code>set [object]'s [x|y] to [value]</code><br>
+            <em>*New Feature: You can set a coordinate to match another object!</em>
+            <div class="example">set laser's x to player's x</div>
         </li>
     </ul>
 
@@ -32,48 +34,33 @@
         <li><strong>Move Object Coordinates:</strong> <code>add [num] to [object]'s x</code> (or y)</li>
         <li><strong>Enemy Tracking (AI):</strong> <code>move [object1] towards [object2] by [speed]</code></li>
         <li><strong>Draw Object:</strong> <code>draw object [name]</code></li>
-        <li><strong>Draw Text:</strong> <code>draw text [string] at x [num] y [num]</code></li>
         <li><strong>Clear Screen:</strong> <code>clear canvas</code></li>
     </ul>
 
-    <h2>3. Tilemaps & Visual Editor</h2>
-    <ul>
-        <li><strong>Create a Tilemap:</strong> Define a grid of emojis to act as your game background or level. (Or use the built-in Map Editor Tab to do this for you!)
-            <div class="example">create tilemap myLevel
-    "🟥🟥🟥"
-    "🟥🟩🟥"
-    "🟥🟥🟥"
-end tilemap</div>
-        </li>
-        <li><strong>Draw Tilemap:</strong> <code>draw tilemap [name] at x [num] y [num]</code><br>
-        <em>Note: Always draw your tilemap before your objects so your character stands on top of the map!</em></li>
-    </ul>
-
-    <h2>4. Game Physics & Map Collisions</h2>
+    <h2>3. Advanced Collisions & Raycasting</h2>
     <ul>
         <li><strong>Object vs Object:</strong> <code>if [object1] is touching [object2]</code></li>
-        <li><strong>Object vs Wall (Tilemap Physics):</strong> To make a tile "solid", check if the player hit it immediately after moving. If they did, undo the movement!
-            <div class="example">if you pressed "arrow right"
-    add 5 to player's x
-    if player is touching tile "🟥" in myLevel
-        subtract 5 from player's x
-    end if
+        <li><strong>Object vs Wall:</strong> <code>if [object] is touching tile "[emoji]" in [tilemap]</code></li>
+        <li><strong>Line of Sight (Raycasting):</strong> Checks if there is a clear path between two objects, looking for a specific tile blocking the way. Use <code>hits</code> or <code>does not hit</code>.
+            <div class="example">if raycast from enemy to player does not hit "🟥" in myLevel
+    move enemy towards player by 2
 end if</div>
         </li>
     </ul>
 
-    <h2>5. Audio & Control</h2>
+    <h2>4. Tilemaps</h2>
     <ul>
-        <li><strong>Play a Sound:</strong> <code>play sound "[url]"</code></li>
-        <li><strong>Check Keys:</strong> <code>if you pressed "[key]"</code> (Supports: <code>"arrow up"</code>, <code>"arrow down"</code>, <code>"arrow left"</code>, <code>"arrow right"</code>, <code>"space"</code>, letters, and numbers).</li>
+        <li><strong>Create a Tilemap:</strong> Define a grid of emojis to act as your game background. (Or use the Map Editor Tab!)</li>
+        <li><strong>Draw Tilemap:</strong> <code>draw tilemap [name] at x [num] y [num]</code></li>
     </ul>
 
-    <h2>6. Logic & Loops</h2>
+    <h2>5. Logic & Control</h2>
     <ul>
         <li><strong>While Loops:</strong> <code>while [variable] is [true|false]</code><br>
-            <em>Note: Always put <code>wait 30 milliseconds</code> inside your game loops so the browser doesn't freeze!</em>
+            <em>Note: Always put <code>wait 30 milliseconds</code> inside your game loops!</em>
         </li>
-        <li><strong>Functions:</strong> Wraps code so it can be reused. Use <code>create function [name]</code>, and trigger it with <code>run [name]</code>.</li>
+        <li><strong>Functions:</strong> Use <code>create function [name]</code> and <code>run [name]</code>.</li>
+        <li><strong>Check Keys:</strong> <code>if you pressed "[key]"</code> (Supports: <code>"arrow up"</code>, <code>"space"</code>, etc.)</li>
     </ul>
 
 </body>
