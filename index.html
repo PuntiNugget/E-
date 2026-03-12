@@ -17,7 +17,7 @@
         .editor-panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
         .panel-header { background: #3c3c3c; padding: 10px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         
-        /* --- NEW IDE STYLES --- */
+        /* --- IDE STYLES --- */
         .editor-wrapper { display: flex; flex: 1; overflow: hidden; background: #1e1e1e; }
         .line-numbers { padding: 15px 10px; background: #1e1e1e; color: #5a5a5a; font-family: 'Courier New', Courier, monospace; font-size: 15px; line-height: 1.4; text-align: right; border-right: 1px solid #333; user-select: none; overflow: hidden; }
         textarea { flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 15px; resize: none; outline: none; line-height: 1.4; white-space: pre; overflow-x: auto; }
@@ -418,6 +418,8 @@ end function
                 else if (line.match(/^if (\w+) is touching tile "([^"]+)" in (\w+)$/)) isValidCommand = true;
                 else if (line.match(/^if raycast from (\w+) to (\w+) (hits|does not hit) "([^"]+)" in (\w+)$/)) isValidCommand = true;
                 else if (line.match(/^set (\w+)'s (x|y) to (.+)$/)) isValidCommand = true;
+                // --- NEW LINTER PATCH: Allow updating variables without type ---
+                else if (line.match(/^set (\w+) to (.+)$/)) isValidCommand = true;
 
                 else {
                     let setMatch = line.match(/^set (number|string|boolean) (\w+) to (.+)$/);
@@ -562,6 +564,18 @@ end function
                     let setPropMatch = line.match(/^set (\w+)'s (x|y) to (.+)$/);
                     if (setPropMatch) {
                         variables[setPropMatch[1]][setPropMatch[2]] = getValue(setPropMatch[3]);
+                        ip++; continue;
+                    }
+
+                    // --- NEW RUNNER PATCH: Update existing variables ---
+                    let updateMatch = line.match(/^set (\w+) to (.+)$/);
+                    if (updateMatch && !["number", "string", "boolean", "object"].includes(updateMatch[1])) {
+                        let varName = updateMatch[1];
+                        if (variables[varName]) {
+                            variables[varName].value = getValue(updateMatch[2]);
+                        } else {
+                            throw new Error(`Variable '${varName}' not found. Create it first!`);
+                        }
                         ip++; continue;
                     }
 
