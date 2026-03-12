@@ -577,7 +577,7 @@ print "hello, world!"
                     let drawObjMatch = line.match(/^draw object (\w+)$/);
                     if (drawObjMatch) {
                         let obj = variables[drawObjMatch[1]];
-                        ctx.font = '30px Arial'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(obj.sprite, obj.x, obj.y);
+                        ctx.font = '30px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(obj.sprite, obj.x, obj.y);
                         ip++; continue;
                     }
                     
