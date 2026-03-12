@@ -17,7 +17,14 @@
         .editor-panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
         .panel-header { background: #3c3c3c; padding: 10px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         
-        /* --- IDE STYLES --- */
+        /* --- IDE & BUTTON STYLES --- */
+        button.secondary-btn { background: #444; color: #fff; border: 1px solid #555; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 5px; transition: 0.2s; }
+        button.secondary-btn:hover { background: #555; }
+        
+        button.run-btn { background: #ff5e5e; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button.run-btn:hover { background: #e04848; }
+        button.run-btn:disabled { background: #555; cursor: not-allowed; color: #888; }
+
         .editor-wrapper { display: flex; flex: 1; overflow: hidden; background: #1e1e1e; }
         .line-numbers { padding: 15px 10px; background: #1e1e1e; color: #5a5a5a; font-family: 'Courier New', Courier, monospace; font-size: 15px; line-height: 1.4; text-align: right; border-right: 1px solid #333; user-select: none; overflow: hidden; }
         textarea { flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 15px; resize: none; outline: none; line-height: 1.4; white-space: pre; overflow-x: auto; }
@@ -53,15 +60,6 @@
         #map-grid { display: grid; grid-template-columns: repeat(13, 25px); grid-template-rows: repeat(8, 25px); gap: 1px; background: #444; border: 2px solid #555; }
         .grid-cell { background: #111; display: flex; justify-content: center; align-items: center; font-size: 18px; cursor: pointer; user-select: none; }
         .export-btn { margin-top: 15px; background: #238636; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-
-        button.secondary-btn { background: #444; color: #fff; border: 1px solid #555; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 5px; transition: 0.2s; }
-        button.secondary-btn:hover { background: #555; }
-        
-        button.run-btn { background: #ff5e5e; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        
-        button.run-btn { background: #ff5e5e; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        button.run-btn:hover { background: #e04848; }
-        button.run-btn:disabled { background: #555; cursor: not-allowed; color: #888; }
         
         .error { color: #ff7b72; }
         .system { color: #8b949e; font-style: italic; }
@@ -88,7 +86,65 @@
             <div class="editor-wrapper">
                 <div id="line-numbers" class="line-numbers">1</div>
                 <textarea id="editor" spellcheck="false" wrap="off">
-print "hello, world!"
+print "Retro ASCII Mode Enabled! Click canvas to move."
+
+create tilemap retroLevel
+    "#############"
+    "#...........#"
+    "#.1.......2.#"
+    "#...........#"
+    "#...#####...#"
+    "#...........#"
+    "#...........#"
+    "#############"
+end tilemap
+
+set object player to "@" at x 180 y 200
+
+set boolean gameIsRunning to true
+
+while gameIsRunning is true
+    clear canvas
+    
+    // Draw the level in green
+    set color to "lime"
+    draw tilemap retroLevel at x 5 y 30
+    
+    if you pressed "arrow right"
+        add 5 to player's x
+        if player is touching tile "#" in retroLevel
+            subtract 5 from player's x
+        end if
+    end if
+
+    if you pressed "arrow left"
+        subtract 5 from player's x
+        if player is touching tile "#" in retroLevel
+            add 5 to player's x
+        end if
+    end if
+
+    if you pressed "arrow up"
+        subtract 5 from player's y
+        if player is touching tile "#" in retroLevel
+            add 5 to player's y
+        end if
+    end if
+
+    if you pressed "arrow down"
+        add 5 to player's y
+        if player is touching tile "#" in retroLevel
+            subtract 5 from player's y
+        end if
+    end if
+    
+    // Draw the player in cyan
+    set color to "cyan"
+    draw object player
+
+    wait 30 milliseconds
+end while
+end program
 </textarea>
             </div>
             <div id="autocomplete-bar">
@@ -123,6 +179,7 @@ print "hello, world!"
                             <button class="palette-btn" onclick="selectTile('🟫')">🟫</button>
                             <button class="palette-btn" onclick="selectTile('🟦')">🟦</button>
                             <button class="palette-btn" onclick="selectTile('⬛')">⬛</button>
+                            <button class="palette-btn" onclick="selectTile('#')">#</button>
                         </div>
                         <div id="map-grid"></div>
                         <button class="export-btn" onclick="exportMap()">Copy Map Code to Clipboard</button>
@@ -151,7 +208,7 @@ print "hello, world!"
             "to", "at", "x", "y", "clear", "canvas", "draw", "sprite", "text", "run", "if", "while", 
             "is", "true", "false", "raycast", "from", "hits", "does", "not", "hit", "in", "move", 
             "towards", "by", "wait", "milliseconds", "seconds", "you", "pressed", "touching", "tile",
-            "print", "add", "subtract"
+            "print", "add", "subtract", "color"
         ];
         
         let customVariables = new Set();
@@ -182,12 +239,10 @@ print "hello, world!"
             currentSuggestions = [];
 
             if (currentWord.length > 0) {
-                // Combine keywords and custom user variables
                 let allWords = Array.from(new Set([...engineKeywords, ...customVariables]));
-                
                 currentSuggestions = allWords.filter(word => 
                     word.toLowerCase().startsWith(currentWord.toLowerCase()) && word.toLowerCase() !== currentWord.toLowerCase()
-                ).slice(0, 5); // Show top 5 max
+                ).slice(0, 5); 
             }
 
             if (currentSuggestions.length > 0) {
@@ -213,13 +268,11 @@ print "hello, world!"
             checkSyntax();
         });
 
-        // Intercept TAB for Autocomplete (or normal indent)
         editor.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') {
-                e.preventDefault(); // Prevent moving focus off textarea
+                e.preventDefault(); 
                 
                 if (currentSuggestions.length > 0) {
-                    // Autocomplete the top suggestion
                     const before = editor.value.substring(0, wordStartIndex);
                     const after = editor.value.substring(editor.selectionStart);
                     const suggestion = currentSuggestions[0];
@@ -230,7 +283,6 @@ print "hello, world!"
                     updateAutocomplete();
                     checkSyntax();
                 } else {
-                    // Standard code indentation
                     const start = editor.selectionStart;
                     const end = editor.selectionEnd;
                     editor.value = editor.value.substring(0, start) + "    " + editor.value.substring(end);
@@ -239,9 +291,7 @@ print "hello, world!"
             }
         });
 
-        // Initialize editor features
         updateLineNumbers();
-
 
         // --- MAP EDITOR ---
         let currentTile = '🟩';
@@ -309,7 +359,6 @@ print "hello, world!"
             let hasError = false;
             let inTilemap = false;
             
-            // Clear and rebuild custom variables for Autocomplete
             customVariables.clear();
 
             for (let i = 0; i < lines.length; i++) {
@@ -320,7 +369,7 @@ print "hello, world!"
             for (let i = 0; i < lines.length; i++) {
                 let line = lines[i].trim();
                 if (!line || line.startsWith('//')) continue;
-                
+
                 let isValidCommand = false;
 
                 if (inTilemap) {
@@ -335,8 +384,9 @@ print "hello, world!"
                 else if (line.match(/^if (\w+) is touching tile "([^"]+)" in (\w+)$/)) isValidCommand = true;
                 else if (line.match(/^if raycast from (\w+) to (\w+) (hits|does not hit) "([^"]+)" in (\w+)$/)) isValidCommand = true;
                 else if (line.match(/^set (\w+)'s (x|y) to (.+)$/)) isValidCommand = true;
-                // --- NEW LINTER PATCH: Allow updating variables without type ---
                 else if (line.match(/^set (\w+) to (.+)$/)) isValidCommand = true;
+                // --- NEW LINTER RULE FOR COLOR ---
+                else if (line.match(/^set color to "([^"]+)"$/)) isValidCommand = true;
 
                 else {
                     let setMatch = line.match(/^set (number|string|boolean) (\w+) to (.+)$/);
@@ -392,8 +442,6 @@ print "hello, world!"
             document.getElementById('runBtn').disabled = true; 
         }
 
-        checkSyntax();
-
         let isRunning = false; 
 
         async function startExecution() {
@@ -416,6 +464,9 @@ print "hello, world!"
             let ip = 0;
             let functions = {};
             let callStack = [];
+            
+            // --- NEW: Track the current drawing color ---
+            let currentColor = '#ffffff';
 
             for(let j=0; j<lines.length; j++) {
                 let funcMatch = lines[j].trim().match(/^create function (\w+)$/);
@@ -449,6 +500,13 @@ print "hello, world!"
                     let line = lines[ip].trim();
                     if (!line || line.startsWith('//')) { ip++; continue; }
 
+                    // --- NEW: Handle Color Command ---
+                    let colorMatch = line.match(/^set color to "([^"]+)"$/);
+                    if (colorMatch) {
+                        currentColor = colorMatch[1];
+                        ip++; continue;
+                    }
+
                     let mapCreateMatch = line.match(/^create tilemap (\w+)$/);
                     if (mapCreateMatch) {
                         let mapName = mapCreateMatch[1]; let mapRows = []; let depth = 1;
@@ -468,6 +526,7 @@ print "hello, world!"
                         mapData.lastX = getValue(drawMapMatch[2]);
                         mapData.lastY = getValue(drawMapMatch[3]);
                         
+                        ctx.fillStyle = currentColor;
                         ctx.font = '30px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
                         for (let r = 0; r < mapData.rows.length; r++) {
                             let chars = Array.from(mapData.rows[r]); 
@@ -484,9 +543,8 @@ print "hello, world!"
                         ip++; continue;
                     }
 
-                    // --- NEW RUNNER PATCH: Update existing variables ---
                     let updateMatch = line.match(/^set (\w+) to (.+)$/);
-                    if (updateMatch && !["number", "string", "boolean", "object"].includes(updateMatch[1])) {
+                    if (updateMatch && !["number", "string", "boolean", "object", "color"].includes(updateMatch[1])) {
                         let varName = updateMatch[1];
                         if (variables[varName]) {
                             variables[varName].value = getValue(updateMatch[2]);
@@ -577,12 +635,17 @@ print "hello, world!"
                     let drawObjMatch = line.match(/^draw object (\w+)$/);
                     if (drawObjMatch) {
                         let obj = variables[drawObjMatch[1]];
+                        ctx.fillStyle = currentColor;
                         ctx.font = '30px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(obj.sprite, obj.x, obj.y);
                         ip++; continue;
                     }
                     
                     let drawTextMatch = line.match(/^draw text (.+) at x (.+) y (.+)$/);
-                    if (drawTextMatch) { ctx.font = '24px Arial'; ctx.fillStyle = '#ffffff'; ctx.fillText(getValue(drawTextMatch[1]), getValue(drawTextMatch[2]), getValue(drawTextMatch[3])); ip++; continue; }
+                    if (drawTextMatch) { 
+                        ctx.fillStyle = currentColor; 
+                        ctx.font = '24px monospace'; ctx.fillText(getValue(drawTextMatch[1]), getValue(drawTextMatch[2]), getValue(drawTextMatch[3])); 
+                        ip++; continue; 
+                    }
 
                     let moveTowardMatch = line.match(/^move (\w+) towards (\w+) by (\d+)$/);
                     if (moveTowardMatch) {
@@ -641,7 +704,6 @@ print "hello, world!"
         function saveCode() {
             localStorage.setItem('eSharpSavedCode', editor.value);
             
-            // Give brief visual feedback
             const saveBtn = event.target;
             const originalText = saveBtn.innerText;
             saveBtn.innerText = "✅ Saved!";
@@ -663,7 +725,6 @@ print "hello, world!"
             }
         }
 
-        // Auto-load code when you open the page
         window.onload = () => {
             const savedCode = localStorage.getItem('eSharpSavedCode');
             if (savedCode) {
