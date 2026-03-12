@@ -66,9 +66,8 @@
                 <button id="runBtn" class="run-btn" onclick="startExecution()">Run Program</button>
             </div>
             <textarea id="editor" spellcheck="false">
-print "Welcome to the Arena! Use Arrow Keys to move."
+print "Hide behind the red walls so the enemy can't see you!"
 
-// Create our background level
 create tilemap arenaLevel
     "🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥"
     "🟥🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩🟥"
@@ -80,31 +79,32 @@ create tilemap arenaLevel
     "🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥"
 end tilemap
 
-set object player to "👽" at x 180 y 150
+set object player to "👽" at x 180 y 180
+set object enemy to "👾" at x 180 y 50
 set boolean gameIsRunning to true
 
 while gameIsRunning is true
     clear canvas
-    
-    // Draw the tilemap first
     draw tilemap arenaLevel at x 5 y 30
     
-    // Run movement and collision physics
     run handlePlayerPhysics
+
+    // --- NEW: RAYCAST LINE OF SIGHT ---
+    // The enemy only moves if it CANNOT see a red block between you and it
+    if raycast from enemy to player does not hit "🟥" in arenaLevel
+        move enemy towards player by 2
+    end if
     
-    // Draw the player on top
     draw object player
+    draw object enemy
 
     wait 30 milliseconds
 end while
-
 end program
 
-// --- Physics Engine ---
 create function handlePlayerPhysics
     if you pressed "arrow right"
         add 5 to player's x
-        // If we hit a red block, undo the movement!
         if player is touching tile "🟥" in arenaLevel
             subtract 5 from player's x
         end if
@@ -182,7 +182,6 @@ end function
         // --- MAP EDITOR ---
         let currentTile = '🟩';
         const mapGrid = document.getElementById('map-grid');
-        
         function selectTile(emoji) {
             currentTile = emoji;
             document.querySelectorAll('.palette-btn').forEach(btn => btn.classList.remove('selected'));
@@ -205,11 +204,8 @@ end function
             let output = "create tilemap myLevel\n";
             for(let r=0; r<8; r++) {
                 let rowStr = '    "';
-                for(let c=0; c<13; c++) {
-                    rowStr += cells[r * 13 + c].innerText;
-                }
-                rowStr += '"\n';
-                output += rowStr;
+                for(let c=0; c<13; c++) { rowStr += cells[r * 13 + c].innerText; }
+                rowStr += '"\n'; output += rowStr;
             }
             output += "end tilemap";
             navigator.clipboard.writeText(output);
@@ -274,8 +270,10 @@ end function
                 }
                 else if (line.match(/^draw tilemap (\w+) at x (.+) y (.+)$/)) isValidCommand = true;
                 else if (line.match(/^play sound "(.+)"$/)) isValidCommand = true;
-                // --- NEW TILE COLLISION LINTER ---
                 else if (line.match(/^if (\w+) is touching tile "([^"]+)" in (\w+)$/)) isValidCommand = true;
+                
+                // --- NEW RAYCAST LINTER ---
+                else if (line.match(/^if raycast from (\w+) to (\w+) (hits|does not hit) "([^"]+)" in (\w+)$/)) isValidCommand = true;
 
                 else {
                     let setMatch = line.match(/^set (number|string|boolean) (\w+) to (.+)$/);
@@ -413,41 +411,67 @@ end function
                         ip++; continue;
                     }
 
-                    // --- NEW: TILE COLLISION LOGIC ---
-                    let tileCollisionMatch = line.match(/^if (\w+) is touching tile "([^"]+)" in (\w+)$/);
-                    if (tileCollisionMatch) {
-                        let obj = variables[tileCollisionMatch[1]];
-                        let targetEmoji = tileCollisionMatch[2];
-                        let mapData = variables[tileCollisionMatch[3]];
+                    // --- NEW: RAYCAST LOGIC ---
+                    let raycastMatch = line.match(/^if raycast from (\w+) to (\w+) (hits|does not hit) "([^"]+)" in (\w+)$/);
+                    if (raycastMatch) {
+                        let obj1 = variables[raycastMatch[1]], obj2 = variables[raycastMatch[2]];
+                        let condition = raycastMatch[3], targetEmoji = raycastMatch[4], mapData = variables[raycastMatch[5]];
 
-                        if (!obj || obj.type !== 'object') throw new Error(`Not an object.`);
+                        if (!obj1 || !obj2 || obj1.type !== 'object' || obj2.type !== 'object') throw new Error(`Raycast requires objects.`);
                         if (!mapData || mapData.type !== 'tilemap') throw new Error(`Not a tilemap.`);
 
-                        let isTouching = false;
-                        let tileSize = 30;
-                        let objSize = 25; // Hitbox size
+                        // Center the raycast points on the emojis
+                        let startX = obj1.x + 15, startY = obj1.y + 15;
+                        let endX = obj2.x + 15, endY = obj2.y + 15;
+
+                        let dx = endX - startX, dy = endY - startY;
+                        let distance = Math.sqrt(dx*dx + dy*dy);
+                        let steps = Math.max(1, Math.floor(distance / 5)); 
+                        let hitWall = false;
+
+                        for (let i = 0; i <= steps; i++) {
+                            let checkX = startX + (dx / steps) * i;
+                            let checkY = startY + (dy / steps) * i;
+
+                            let col = Math.floor((checkX - mapData.lastX) / 30);
+                            let row = Math.floor((checkY - mapData.lastY) / 30);
+
+                            if (row >= 0 && row < mapData.rows.length) {
+                                let chars = Array.from(mapData.rows[row]);
+                                if (col >= 0 && col < chars.length) {
+                                    if (chars[col] === targetEmoji) {
+                                        hitWall = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        let shouldRunBlock = (condition === "hits" && hitWall) || (condition === "does not hit" && !hitWall);
+
+                        if (!shouldRunBlock) {
+                            let depth = 1;
+                            while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; }
+                        }
+                        ip++; continue;
+                    }
+
+                    let tileCollisionMatch = line.match(/^if (\w+) is touching tile "([^"]+)" in (\w+)$/);
+                    if (tileCollisionMatch) {
+                        let obj = variables[tileCollisionMatch[1]], targetEmoji = tileCollisionMatch[2], mapData = variables[tileCollisionMatch[3]];
+                        let isTouching = false, tileSize = 30, objSize = 25;
 
                         for (let r = 0; r < mapData.rows.length; r++) {
                             let chars = Array.from(mapData.rows[r]);
                             for (let c = 0; c < chars.length; c++) {
                                 if (chars[c] === targetEmoji) {
-                                    let tx = mapData.lastX + (c * tileSize);
-                                    let ty = mapData.lastY + (r * tileSize);
-                                    // AABB Collision Detection
-                                    if (obj.x < tx + tileSize && obj.x + objSize > tx &&
-                                        obj.y < ty + tileSize && obj.y + objSize > ty) {
-                                        isTouching = true;
-                                        break;
-                                    }
+                                    let tx = mapData.lastX + (c * tileSize), ty = mapData.lastY + (r * tileSize);
+                                    if (obj.x < tx + tileSize && obj.x + objSize > tx && obj.y < ty + tileSize && obj.y + objSize > ty) { isTouching = true; break; }
                                 }
                             }
                             if (isTouching) break;
                         }
-
-                        if (!isTouching) {
-                            let depth = 1;
-                            while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; }
-                        }
+                        if (!isTouching) { let depth = 1; while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; } }
                         ip++; continue;
                     }
 
@@ -456,13 +480,11 @@ end function
 
                     let createFuncMatch = line.match(/^create function (\w+)$/);
                     if (createFuncMatch) {
-                        let depth = 1;
-                        while(depth > 0) { ip++; if (lines[ip].trim().startsWith("create function ")) depth++; if (lines[ip].trim() === "end function") depth--; }
+                        let depth = 1; while(depth > 0) { ip++; if (lines[ip].trim().startsWith("create function ")) depth++; if (lines[ip].trim() === "end function") depth--; }
                         ip++; continue;
                     }
 
                     if (line === "end function") { ip = callStack.pop(); ip++; continue; }
-
                     let runMatch = line.match(/^run (\w+)$/);
                     if (runMatch) { callStack.push(ip); ip = functions[runMatch[1]] + 1; continue; }
 
@@ -472,16 +494,12 @@ end function
                     let drawObjMatch = line.match(/^draw object (\w+)$/);
                     if (drawObjMatch) {
                         let obj = variables[drawObjMatch[1]];
-                        ctx.font = '30px Arial'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-                        ctx.fillText(obj.sprite, obj.x, obj.y);
+                        ctx.font = '30px Arial'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(obj.sprite, obj.x, obj.y);
                         ip++; continue;
                     }
                     
                     let drawTextMatch = line.match(/^draw text (.+) at x (.+) y (.+)$/);
-                    if (drawTextMatch) {
-                        ctx.font = '24px Arial'; ctx.fillStyle = '#ffffff'; ctx.fillText(getValue(drawTextMatch[1]), getValue(drawTextMatch[2]), getValue(drawTextMatch[3]));
-                        ip++; continue;
-                    }
+                    if (drawTextMatch) { ctx.font = '24px Arial'; ctx.fillStyle = '#ffffff'; ctx.fillText(getValue(drawTextMatch[1]), getValue(drawTextMatch[2]), getValue(drawTextMatch[3])); ip++; continue; }
 
                     let moveTowardMatch = line.match(/^move (\w+) towards (\w+) by (\d+)$/);
                     if (moveTowardMatch) {
@@ -509,9 +527,7 @@ end function
 
                     let pressedMatch = line.match(/^if you pressed "([^"]+)"$/);
                     if (pressedMatch) {
-                        if (!activeKeys.has(pressedMatch[1].toLowerCase())) {
-                            let depth = 1; while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; }
-                        }
+                        if (!activeKeys.has(pressedMatch[1].toLowerCase())) { let depth = 1; while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; } }
                         ip++; continue;
                     }
                     
@@ -519,9 +535,7 @@ end function
                     if (touchMatch) {
                         let obj1 = variables[touchMatch[1]], obj2 = variables[touchMatch[2]];
                         let distance = Math.sqrt(Math.pow(obj1.x - obj2.x, 2) + Math.pow(obj1.y - obj2.y, 2));
-                        if (distance >= 30) {
-                            let depth = 1; while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; }
-                        }
+                        if (distance >= 30) { let depth = 1; while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; } }
                         ip++; continue;
                     }
 
@@ -529,23 +543,15 @@ end function
 
                     let whileMatch = line.match(/^while (.+) is (true|false)$/);
                     if (whileMatch) {
-                        if (getValue(whileMatch[1]) !== (whileMatch[2] === "true")) {
-                            let depth = 1; while (depth > 0) { ip++; if (lines[ip].trim().startsWith("while ")) depth++; if (lines[ip].trim() === "end while") depth--; }
-                        }
+                        if (getValue(whileMatch[1]) !== (whileMatch[2] === "true")) { let depth = 1; while (depth > 0) { ip++; if (lines[ip].trim().startsWith("while ")) depth++; if (lines[ip].trim() === "end while") depth--; } }
                         ip++; continue;
                     }
-                    if (line === "end while") { 
-                        let depth = 1; while (depth > 0) { ip--; if (lines[ip].trim() === "end while") depth++; if (lines[ip].trim().startsWith("while ")) depth--; }
-                        continue; 
-                    }
+                    if (line === "end while") { let depth = 1; while (depth > 0) { ip--; if (lines[ip].trim() === "end while") depth++; if (lines[ip].trim().startsWith("while ")) depth--; } continue; }
 
                     throw new Error(`Unrecognized command: '${line}'`);
                 }
-                
                 print("--- Program Finished ---", 'system');
-            } catch (err) {
-                print(`Error on line ${ip + 1}: ${err.message}`, 'error');
-            }
+            } catch (err) { print(`Error on line ${ip + 1}: ${err.message}`, 'error'); }
         }
     </script>
 </body>
