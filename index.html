@@ -636,6 +636,42 @@ print "hello, world!"
                 print("--- Program Finished ---", 'system');
             } catch (err) { print(`Error on line ${ip + 1}: ${err.message}`, 'error'); }
         }
+
+        // --- SAVE / LOAD SYSTEM ---
+        function saveCode() {
+            localStorage.setItem('eSharpSavedCode', editor.value);
+            
+            // Give brief visual feedback
+            const saveBtn = event.target;
+            const originalText = saveBtn.innerText;
+            saveBtn.innerText = "✅ Saved!";
+            saveBtn.style.background = "#238636";
+            setTimeout(() => {
+                saveBtn.innerText = originalText;
+                saveBtn.style.background = "#444";
+            }, 1000);
+        }
+
+        function loadCode() {
+            const savedCode = localStorage.getItem('eSharpSavedCode');
+            if (savedCode) {
+                editor.value = savedCode;
+                updateLineNumbers();
+                checkSyntax();
+            } else {
+                alert("No saved code found in your browser!");
+            }
+        }
+
+        // Auto-load code when you open the page
+        window.onload = () => {
+            const savedCode = localStorage.getItem('eSharpSavedCode');
+            if (savedCode) {
+                editor.value = savedCode;
+                updateLineNumbers();
+                checkSyntax();
+            }
+        };
     </script>
 </body>
 </html>
