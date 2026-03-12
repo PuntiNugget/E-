@@ -16,7 +16,17 @@
         
         .editor-panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
         .panel-header { background: #3c3c3c; padding: 10px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-        textarea { flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 15px; resize: none; outline: none; line-height: 1.4; white-space: pre; }
+        
+        /* --- NEW IDE STYLES --- */
+        .editor-wrapper { display: flex; flex: 1; overflow: hidden; background: #1e1e1e; }
+        .line-numbers { padding: 15px 10px; background: #1e1e1e; color: #5a5a5a; font-family: 'Courier New', Courier, monospace; font-size: 15px; line-height: 1.4; text-align: right; border-right: 1px solid #333; user-select: none; overflow: hidden; }
+        textarea { flex: 1; background: #1e1e1e; color: #d4d4d4; border: none; padding: 15px; font-family: 'Courier New', Courier, monospace; font-size: 15px; resize: none; outline: none; line-height: 1.4; white-space: pre; overflow-x: auto; }
+        
+        #autocomplete-bar { background: #252526; padding: 6px 15px; border-top: 1px solid #444; display: flex; gap: 10px; font-family: 'Courier New', Courier, monospace; font-size: 13px; color: #888; overflow-x: auto; align-items: center; }
+        .suggestion { background: #3c3c3c; padding: 2px 8px; border-radius: 4px; color: #d4d4d4; }
+        .suggestion.active { background: #04395e; border: 1px solid #007fd4; color: #fff; font-weight: bold; }
+        .suggestion-hint { font-style: italic; color: #666; margin-right: 5px; }
+
         #linter-bar { padding: 8px 15px; font-size: 14px; font-weight: bold; font-family: 'Courier New', Courier, monospace; border-top: 1px solid #444; }
         .linter-good { background: #238636; color: #fff; }
         .linter-bad { background: #da3633; color: #fff; }
@@ -65,7 +75,10 @@
                 <span>Program.e#</span>
                 <button id="runBtn" class="run-btn" onclick="startExecution()">Run Program</button>
             </div>
-            <textarea id="editor" spellcheck="false">
+            
+            <div class="editor-wrapper">
+                <div id="line-numbers" class="line-numbers">1</div>
+                <textarea id="editor" spellcheck="false" wrap="off">
 print "Press SPACE to shoot the enemy!"
 
 create tilemap arenaLevel
@@ -81,7 +94,6 @@ end tilemap
 
 set object player to "👽" at x 180 y 200
 set object enemy to "👾" at x 180 y 50
-// Keep the laser hidden off-screen to start
 set object laser to "⚡" at x -100 y -100
 
 set boolean laserFired to false
@@ -93,7 +105,6 @@ while gameIsRunning is true
     
     run handlePlayerPhysics
 
-    // Line of sight for enemy
     if raycast from enemy to player does not hit "🟥" in arenaLevel
         move enemy towards player by 2
     end if
@@ -138,7 +149,6 @@ create function handlePlayerPhysics
 end function
 
 create function handleShooting
-    // 1. Fire the laser if it isn't already flying
     if you pressed "space"
         if laserFired is false
             set laserFired to true
@@ -147,25 +157,26 @@ create function handleShooting
         end if
     end if
 
-    // 2. Animate the laser moving up the screen
     if laserFired is true
         subtract 15 from laser's y
         draw object laser
         
-        // Did we hit the alien?
         if laser is touching enemy
             set enemy's x to -1000
             set laserFired to false
             print "ENEMY DESTROYED! YOU WIN!"
         end if
         
-        // Reset the laser if it goes off the top of the screen
         if laser's y is less than 0
             set laserFired to false
         end if
     end if
 end function
-            </textarea>
+</textarea>
+            </div>
+            <div id="autocomplete-bar">
+                <span class="suggestion-hint">Start typing for suggestions...</span>
+            </div>
             <div id="linter-bar" class="linter-good">Syntax OK - Ready to Run</div>
         </div>
 
@@ -213,6 +224,108 @@ end function
             document.getElementById('tab-' + tabId).classList.add('active');
         }
 
+        // --- IDE FEATURES (Line Numbers & Autocomplete) ---
+        const editor = document.getElementById('editor');
+        const lineNumbers = document.getElementById('line-numbers');
+        const autocompleteBar = document.getElementById('autocomplete-bar');
+        
+        const engineKeywords = [
+            "create", "tilemap", "function", "end", "set", "object", "number", "string", "boolean", 
+            "to", "at", "x", "y", "clear", "canvas", "draw", "sprite", "text", "run", "if", "while", 
+            "is", "true", "false", "raycast", "from", "hits", "does", "not", "hit", "in", "move", 
+            "towards", "by", "wait", "milliseconds", "seconds", "you", "pressed", "touching", "tile",
+            "print", "add", "subtract"
+        ];
+        
+        let customVariables = new Set();
+        let currentSuggestions = [];
+        let currentWord = "";
+        let wordStartIndex = 0;
+
+        function updateLineNumbers() {
+            const lines = editor.value.split('\n').length;
+            lineNumbers.innerHTML = Array(lines).fill(0).map((_, i) => i + 1).join('<br>');
+        }
+        
+        editor.addEventListener('scroll', () => {
+            lineNumbers.scrollTop = editor.scrollTop;
+        });
+
+        function extractCurrentWord() {
+            const cursorPosition = editor.selectionStart;
+            const textToCursor = editor.value.substring(0, cursorPosition);
+            const words = textToCursor.split(/[\s\n]+/);
+            currentWord = words[words.length - 1];
+            wordStartIndex = cursorPosition - currentWord.length;
+        }
+
+        function updateAutocomplete() {
+            extractCurrentWord();
+            autocompleteBar.innerHTML = '';
+            currentSuggestions = [];
+
+            if (currentWord.length > 0) {
+                // Combine keywords and custom user variables
+                let allWords = Array.from(new Set([...engineKeywords, ...customVariables]));
+                
+                currentSuggestions = allWords.filter(word => 
+                    word.toLowerCase().startsWith(currentWord.toLowerCase()) && word.toLowerCase() !== currentWord.toLowerCase()
+                ).slice(0, 5); // Show top 5 max
+            }
+
+            if (currentSuggestions.length > 0) {
+                const hint = document.createElement('span');
+                hint.className = 'suggestion-hint';
+                hint.innerText = 'Press TAB:';
+                autocompleteBar.appendChild(hint);
+
+                currentSuggestions.forEach((sugg, index) => {
+                    const span = document.createElement('span');
+                    span.className = 'suggestion' + (index === 0 ? ' active' : '');
+                    span.innerText = sugg;
+                    autocompleteBar.appendChild(span);
+                });
+            } else {
+                autocompleteBar.innerHTML = '<span class="suggestion-hint">Typing...</span>';
+            }
+        }
+
+        editor.addEventListener('input', () => {
+            updateLineNumbers();
+            updateAutocomplete();
+            checkSyntax();
+        });
+
+        // Intercept TAB for Autocomplete (or normal indent)
+        editor.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault(); // Prevent moving focus off textarea
+                
+                if (currentSuggestions.length > 0) {
+                    // Autocomplete the top suggestion
+                    const before = editor.value.substring(0, wordStartIndex);
+                    const after = editor.value.substring(editor.selectionStart);
+                    const suggestion = currentSuggestions[0];
+                    
+                    editor.value = before + suggestion + " " + after;
+                    editor.selectionStart = editor.selectionEnd = wordStartIndex + suggestion.length + 1;
+                    
+                    updateAutocomplete();
+                    checkSyntax();
+                } else {
+                    // Standard code indentation
+                    const start = editor.selectionStart;
+                    const end = editor.selectionEnd;
+                    editor.value = editor.value.substring(0, start) + "    " + editor.value.substring(end);
+                    editor.selectionStart = editor.selectionEnd = start + 4;
+                }
+            }
+        });
+
+        // Initialize editor features
+        updateLineNumbers();
+
+
         // --- MAP EDITOR ---
         let currentTile = '🟩';
         const mapGrid = document.getElementById('map-grid');
@@ -248,7 +361,6 @@ end function
 
         // --- ENGINE ---
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-        const editor = document.getElementById('editor');
         const linterBar = document.getElementById('linter-bar');
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -275,18 +387,17 @@ end function
             activeKeys.delete(keyName);
         });
 
-        editor.addEventListener('input', checkSyntax);
-
         function checkSyntax() {
             const lines = editor.value.split('\n');
-            let knownVariables = new Set();
-            let knownFunctions = new Set();
             let hasError = false;
             let inTilemap = false;
+            
+            // Clear and rebuild custom variables for Autocomplete
+            customVariables.clear();
 
             for (let i = 0; i < lines.length; i++) {
                 let funcMatch = lines[i].trim().match(/^create function (\w+)$/);
-                if (funcMatch) knownFunctions.add(funcMatch[1]);
+                if (funcMatch) customVariables.add(funcMatch[1]);
             }
 
             for (let i = 0; i < lines.length; i++) {
@@ -299,15 +410,13 @@ end function
                     if (line === "end tilemap") inTilemap = false;
                     isValidCommand = true; 
                 } else if (line.match(/^create tilemap (\w+)$/)) {
-                    knownVariables.add(line.match(/^create tilemap (\w+)$/)[1]);
+                    customVariables.add(line.match(/^create tilemap (\w+)$/)[1]);
                     inTilemap = true; isValidCommand = true;
                 }
                 else if (line.match(/^draw tilemap (\w+) at x (.+) y (.+)$/)) isValidCommand = true;
                 else if (line.match(/^play sound "(.+)"$/)) isValidCommand = true;
                 else if (line.match(/^if (\w+) is touching tile "([^"]+)" in (\w+)$/)) isValidCommand = true;
                 else if (line.match(/^if raycast from (\w+) to (\w+) (hits|does not hit) "([^"]+)" in (\w+)$/)) isValidCommand = true;
-                
-                // --- NEW PROPERTY SETTER ---
                 else if (line.match(/^set (\w+)'s (x|y) to (.+)$/)) isValidCommand = true;
 
                 else {
@@ -316,10 +425,10 @@ end function
                     let combineMatch = line.match(/^combine (.+) and (.+) into (\w+)$/);
                     let setObjMatch = line.match(/^set object (\w+) to (.+) at x (.+) y (.+)$/);
                     
-                    if (setMatch) { knownVariables.add(setMatch[2]); isValidCommand = true; }
-                    else if (randomMatch) { knownVariables.add(randomMatch[1]); isValidCommand = true; }
-                    else if (combineMatch) { knownVariables.add(combineMatch[3]); isValidCommand = true; }
-                    else if (setObjMatch) { knownVariables.add(setObjMatch[1]); isValidCommand = true; }
+                    if (setMatch) { customVariables.add(setMatch[2]); isValidCommand = true; }
+                    else if (randomMatch) { customVariables.add(randomMatch[1]); isValidCommand = true; }
+                    else if (combineMatch) { customVariables.add(combineMatch[3]); isValidCommand = true; }
+                    else if (setObjMatch) { customVariables.add(setObjMatch[1]); isValidCommand = true; }
                     
                     else if (line.startsWith('print ')) isValidCommand = true;
                     else if (line.match(/^add (\d+) to (\w+)$/)) isValidCommand = true;
@@ -407,7 +516,6 @@ end function
                 if (!isNaN(valStr)) return Number(valStr);
                 if (valStr.startsWith('"') && valStr.endsWith('"')) return valStr.substring(1, valStr.length - 1);
                 
-                // --- NEW PROPERTY LOOKUPS ---
                 if (valStr.endsWith("'s x")) { let obj = valStr.replace("'s x", ""); return variables[obj].x; }
                 if (valStr.endsWith("'s y")) { let obj = valStr.replace("'s y", ""); return variables[obj].y; }
 
@@ -451,7 +559,6 @@ end function
                         ip++; continue;
                     }
 
-                    // --- NEW SET PROPERTY LOGIC ---
                     let setPropMatch = line.match(/^set (\w+)'s (x|y) to (.+)$/);
                     if (setPropMatch) {
                         variables[setPropMatch[1]][setPropMatch[2]] = getValue(setPropMatch[3]);
