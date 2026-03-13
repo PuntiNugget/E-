@@ -65,6 +65,43 @@
             display: block;
             margin: 25px auto 0 auto; /* Centers the image and adds space above it */
         }
+
+        /* Container for the whole code block */
+        .code-container {
+            background-color: #141414;
+            border: 1px solid #333;
+            border-radius: 8px;
+            margin: 25px 0;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        /* The dark grey header bar mimicking the IDE */
+        .code-header {
+            background-color: #2d2d2d;
+            padding: 8px 15px;
+            font-size: 0.85em;
+            color: #aaa;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* The actual code text area */
+        .e-sharp-code {
+            padding: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95em;
+            color: #d4d4d4;
+            overflow-x: auto;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* Syntax Highlighting Classes */
+        .kw { color: #ff5e5e; font-weight: bold; } /* Keywords (Red) */
+        .var { color: #a5d6ff; }                   /* Variables/Numbers (Blue) */
+        .str { color: #a5c261; }                   /* Strings (Green) */
     </style>
 </head>
 <body>
@@ -79,6 +116,18 @@
         <img src="https://github.com/PuntiNugget/E-/blob/main/Screenshot%202026-03-13%209.41.16%20AM.png?raw=true" alt="Screenshot 2026-03-13 9.41.16 AM.png"/>
     </div>
     <p class="caption">Figure 1.0 - The empty E# playground</p>
+
+    <p>Now that your canvas is empty, let's write our very first line of code to display some text on the screen.</p>
+
+    <div class="code-container">
+        <div class="code-header">
+            <span>Program.e#</span>
+            <span>E# Script</span>
+        </div>
+        <pre class="e-sharp-code"><code><span class="kw">set string</span> <span class="var">greeting</span> <span class="kw">to</span> <span class="str">"Welcome to E#!"</span>
+        <span class="kw">draw text</span> <span class="var">greeting</span> <span class="kw">at</span> x <span class="var">50</span> y <span class="var">50</span></code></pre>
+    </div>
+    <p>If you run this program, you should see your greeting appear right in the middle of the game canvas!</p>
 
 </body>
 </html>
