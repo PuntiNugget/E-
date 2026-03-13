@@ -17,7 +17,6 @@
         .editor-panel { flex: 1; display: flex; flex-direction: column; background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
         .panel-header { background: #3c3c3c; padding: 10px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         
-        /* --- IDE & BUTTON STYLES --- */
         button.secondary-btn { background: #444; color: #fff; border: 1px solid #555; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 5px; transition: 0.2s; }
         button.secondary-btn:hover { background: #555; }
         
@@ -54,21 +53,21 @@
         #console { flex: 1; padding: 15px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; white-space: pre-wrap; display: flex; flex-direction: column; }
         
         .map-editor { flex: 1; display: flex; flex-direction: column; padding: 10px; align-items: center; overflow-y: auto; }
-        .palette { display: flex; gap: 10px; margin-bottom: 10px; }
+        .palette { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
         .palette-btn { font-size: 24px; background: none; border: 2px solid transparent; cursor: pointer; border-radius: 4px; padding: 2px; }
         .palette-btn.selected { border: 2px solid #ff5e5e; background: #444; }
         
         #map-grid { display: grid; grid-template-columns: repeat(13, 25px); grid-template-rows: repeat(8, 25px); gap: 1px; background: #444; border: 2px solid #555; }
         .grid-cell { background: #111; display: flex; justify-content: center; align-items: center; font-size: 18px; cursor: pointer; user-select: none; }
         
-        /* --- NEW: SPRITE EDITOR STYLES --- */
         #sprite-grid { display: grid; grid-template-columns: repeat(8, 30px); grid-template-rows: repeat(8, 30px); gap: 1px; background: #444; border: 2px solid #555; }
         .sprite-cell { background: #111; cursor: pointer; user-select: none; }
-        .color-btn { width: 30px; height: 30px; border: 2px solid #444; cursor: pointer; border-radius: 4px; }
+        .color-btn { width: 30px; height: 30px; border: 2px solid #444; cursor: pointer; border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 18px; }
         .color-btn.selected { border: 2px solid #fff; transform: scale(1.1); }
         .color-R { background: #ff5e5e; } .color-G { background: #238636; } .color-B { background: #007fd4; }
         .color-Y { background: #e3b341; } .color-W { background: #ffffff; } .color-K { background: #333; }
-        .color-blank { background: repeating-linear-gradient(45deg, #222, #222 5px, #111 5px, #111 10px); }
+        /* Eraser styling */
+        .color-eraser { background: #2d2d2d; }
         
         .export-btn { margin-top: 15px; background: #238636; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         
@@ -97,25 +96,29 @@
             <div class="editor-wrapper">
                 <div id="line-numbers" class="line-numbers">1</div>
                 <textarea id="editor" spellcheck="false" wrap="off">
-print "Pixel Art Mode Online! Use Arrow Keys."
+print "Transform Controls Online!"
 
-create pixelart hero
-    ".RRRRRR."
-    "RWWWWWWW"
-    "RRRRRRRR"
-    "R.RRRR.R"
-    "R.RRRR.R"
-    "..RRRR.."
-    ".RR..RR."
-    ".R....R."
+create pixelart sword
+    ".......W"
+    "......WW"
+    ".....WW."
+    "....WW.."
+    ".Y.WW..."
+    "YYWW...."
+    "YYY....."
+    ".Y......"
 end pixelart
 
-set object player to hero at x 180 y 150
+set object player to sword at x 180 y 150
+set player's scale to 2
 
 set boolean gameIsRunning to true
 
 while gameIsRunning is true
     clear canvas
+    
+    // Rotate constantly!
+    add 5 to player's rotation
     
     if you pressed "arrow right"
         add 5 to player's x
@@ -123,11 +126,13 @@ while gameIsRunning is true
     if you pressed "arrow left"
         subtract 5 from player's x
     end if
+    
+    // Scale controls!
     if you pressed "arrow up"
-        subtract 5 from player's y
+        add 0.1 to player's scale
     end if
     if you pressed "arrow down"
-        add 5 to player's y
+        subtract 0.1 to player's scale
     end if
     
     draw object player
@@ -186,7 +191,8 @@ end program
                             <button class="color-btn color-Y" onclick="selectPixelColor('Y', this)"></button>
                             <button class="color-btn color-W" onclick="selectPixelColor('W', this)"></button>
                             <button class="color-btn color-K" onclick="selectPixelColor('K', this)"></button>
-                            <button class="color-btn color-blank" onclick="selectPixelColor('.', this)"></button>
+                            <div style="width: 1px; height: 30px; background: #555; margin: 0 5px;"></div>
+                            <button class="color-btn color-eraser" onclick="selectPixelColor('.', this)" title="Eraser">🧽</button>
                         </div>
                         <div id="sprite-grid"></div>
                         <button class="export-btn" onclick="exportSprite()">Copy Sprite Code</button>
@@ -213,7 +219,7 @@ end program
         
         const engineKeywords = [
             "create", "tilemap", "pixelart", "function", "end", "set", "object", "number", "string", "boolean", 
-            "to", "at", "x", "y", "clear", "canvas", "draw", "sprite", "text", "run", "if", "while", 
+            "to", "at", "x", "y", "scale", "rotation", "clear", "canvas", "draw", "sprite", "text", "run", "if", "while", 
             "is", "true", "false", "raycast", "from", "hits", "does", "not", "hit", "in", "move", 
             "towards", "by", "wait", "milliseconds", "seconds", "you", "pressed", "touching", "tile",
             "print", "add", "subtract", "color"
@@ -252,16 +258,11 @@ end program
             }
 
             if (currentSuggestions.length > 0) {
-                const hint = document.createElement('span');
-                hint.className = 'suggestion-hint';
-                hint.innerText = 'Press TAB:';
+                const hint = document.createElement('span'); hint.className = 'suggestion-hint'; hint.innerText = 'Press TAB:';
                 autocompleteBar.appendChild(hint);
-
                 currentSuggestions.forEach((sugg, index) => {
-                    const span = document.createElement('span');
-                    span.className = 'suggestion' + (index === 0 ? ' active' : '');
-                    span.innerText = sugg;
-                    autocompleteBar.appendChild(span);
+                    const span = document.createElement('span'); span.className = 'suggestion' + (index === 0 ? ' active' : '');
+                    span.innerText = sugg; autocompleteBar.appendChild(span);
                 });
             } else { autocompleteBar.innerHTML = '<span class="suggestion-hint">Typing...</span>'; }
         }
@@ -279,8 +280,7 @@ end program
                     editor.selectionStart = editor.selectionEnd = wordStartIndex + suggestion.length + 1;
                     updateAutocomplete(); checkSyntax();
                 } else {
-                    const start = editor.selectionStart;
-                    const end = editor.selectionEnd;
+                    const start = editor.selectionStart; const end = editor.selectionEnd;
                     editor.value = editor.value.substring(0, start) + "    " + editor.value.substring(end);
                     editor.selectionStart = editor.selectionEnd = start + 4;
                 }
@@ -341,7 +341,8 @@ end program
             
             function applyPixel(el) {
                 el.dataset.char = currentPixel;
-                el.style.backgroundColor = pColors[currentPixel];
+                // If transparent/eraser, clear background, otherwise set color
+                el.style.backgroundColor = currentPixel === '.' ? 'transparent' : pColors[currentPixel];
             }
             
             cell.addEventListener('mousedown', (e) => { isSpriteDrawing = true; applyPixel(e.target); });
@@ -390,7 +391,7 @@ end program
             const lines = editor.value.split('\n');
             let hasError = false;
             let inTilemap = false;
-            let inPixelArt = false; // NEW LINTER RULE
+            let inPixelArt = false;
             
             customVariables.clear();
 
@@ -425,7 +426,10 @@ end program
                 else if (line.match(/^play sound "(.+)"$/)) isValidCommand = true;
                 else if (line.match(/^if (\w+) is touching tile "([^"]+)" in (\w+)$/)) isValidCommand = true;
                 else if (line.match(/^if raycast from (\w+) to (\w+) (hits|does not hit) "([^"]+)" in (\w+)$/)) isValidCommand = true;
-                else if (line.match(/^set (\w+)'s (x|y) to (.+)$/)) isValidCommand = true;
+                
+                // --- NEW LINTER RULES FOR SCALE AND ROTATION ---
+                else if (line.match(/^set (\w+)'s (x|y|scale|rotation) to (.+)$/)) isValidCommand = true;
+                
                 else if (line.match(/^set (\w+) to (.+)$/)) isValidCommand = true;
                 else if (line.match(/^set color to "([^"]+)"$/)) isValidCommand = true;
 
@@ -441,13 +445,15 @@ end program
                     else if (setObjMatch) { customVariables.add(setObjMatch[1]); isValidCommand = true; }
                     
                     else if (line.startsWith('print ')) isValidCommand = true;
-                    else if (line.match(/^add (\d+) to (\w+)$/)) isValidCommand = true;
-                    else if (line.match(/^subtract (\d+) from (\w+)$/)) isValidCommand = true;
-                    else if (line.match(/^add (\d+) to (\w+)'s (x|y)$/)) isValidCommand = true;
-                    else if (line.match(/^subtract (\d+) from (\w+)'s (x|y)$/)) isValidCommand = true;
+                    else if (line.match(/^add (.+) to (\w+)$/)) isValidCommand = true;
+                    else if (line.match(/^subtract (.+) from (\w+)$/)) isValidCommand = true;
+                    
+                    // --- NEW LINTER RULES FOR MATH ON TRANSFORMS ---
+                    else if (line.match(/^add (.+) to (\w+)'s (x|y|scale|rotation)$/)) isValidCommand = true;
+                    else if (line.match(/^subtract (.+) from (\w+)'s (x|y|scale|rotation)$/)) isValidCommand = true;
+                    
                     else if (line.match(/^move (\w+) towards (\w+) by (\d+)$/)) isValidCommand = true;
                     else if (line.match(/^draw object (\w+)$/)) isValidCommand = true;
-                    else if (line.match(/^draw sprite (.+) at x (.+) y (.+)$/)) isValidCommand = true;
                     else if (line.match(/^draw text (.+) at x (.+) y (.+)$/)) isValidCommand = true;
                     else if (line === "clear canvas" || line === "clear terminal" || line === "end program" || line === "end if" || line === "end while") isValidCommand = true;
                     else if (line.match(/^wait (\d+) seconds?$/)) isValidCommand = true;
@@ -521,9 +527,10 @@ end program
                 
                 if (valStr.endsWith("'s x")) { let obj = valStr.replace("'s x", ""); return variables[obj].x; }
                 if (valStr.endsWith("'s y")) { let obj = valStr.replace("'s y", ""); return variables[obj].y; }
+                if (valStr.endsWith("'s scale")) { let obj = valStr.replace("'s scale", ""); return variables[obj].scale; }
+                if (valStr.endsWith("'s rotation")) { let obj = valStr.replace("'s rotation", ""); return variables[obj].rotation; }
 
                 if (variables[valStr] !== undefined) {
-                    // --- NEW: Return the full object if it's a pixelart, otherwise the primitive value
                     if (variables[valStr].type === 'pixelart') return variables[valStr];
                     return variables[valStr].value;
                 }
@@ -540,7 +547,6 @@ end program
                     let colorMatch = line.match(/^set color to "([^"]+)"$/);
                     if (colorMatch) { currentColor = colorMatch[1]; ip++; continue; }
 
-                    // --- NEW PARSER FOR PIXELART ---
                     let pixelArtMatch = line.match(/^create pixelart (\w+)$/);
                     if (pixelArtMatch) {
                         let name = pixelArtMatch[1]; let rows = []; let depth = 1;
@@ -579,7 +585,8 @@ end program
                         ip++; continue;
                     }
 
-                    let setPropMatch = line.match(/^set (\w+)'s (x|y) to (.+)$/);
+                    // --- NEW PROP SETTER (HANDLES SCALE/ROTATION) ---
+                    let setPropMatch = line.match(/^set (\w+)'s (x|y|scale|rotation) to (.+)$/);
                     if (setPropMatch) { variables[setPropMatch[1]][setPropMatch[2]] = getValue(setPropMatch[3]); ip++; continue; }
 
                     let updateMatch = line.match(/^set (\w+) to (.+)$/);
@@ -612,7 +619,7 @@ end program
                     let tileCollisionMatch = line.match(/^if (\w+) is touching tile "([^"]+)" in (\w+)$/);
                     if (tileCollisionMatch) {
                         let obj = variables[tileCollisionMatch[1]], targetEmoji = tileCollisionMatch[2], mapData = variables[tileCollisionMatch[3]];
-                        let isTouching = false, tileSize = 30, objSize = 25;
+                        let isTouching = false, tileSize = 30, objSize = 25 * obj.scale; // Factor in scale for collision!
                         for (let r = 0; r < mapData.rows.length; r++) {
                             let chars = Array.from(mapData.rows[r]);
                             for (let c = 0; c < chars.length; c++) {
@@ -637,28 +644,46 @@ end program
                     let runMatch = line.match(/^run (\w+)$/);
                     if (runMatch) { callStack.push(ip); ip = functions[runMatch[1]] + 1; continue; }
 
+                    // --- INITIALIZE OBJECTS WITH TRANSFORM PROPS ---
                     let setObjMatch = line.match(/^set object (\w+) to (.+) at x (.+) y (.+)$/);
-                    if (setObjMatch) { variables[setObjMatch[1]] = { type: 'object', sprite: getValue(setObjMatch[2]), x: getValue(setObjMatch[3]), y: getValue(setObjMatch[4]) }; ip++; continue; }
+                    if (setObjMatch) { variables[setObjMatch[1]] = { type: 'object', sprite: getValue(setObjMatch[2]), x: getValue(setObjMatch[3]), y: getValue(setObjMatch[4]), scale: 1, rotation: 0 }; ip++; continue; }
 
-                    // --- NEW: RENDER PIXELART LOGIC ---
+                    // --- TRANSFORM RENDERING LOGIC ---
                     let drawObjMatch = line.match(/^draw object (\w+)$/);
                     if (drawObjMatch) {
                         let obj = variables[drawObjMatch[1]];
+                        
+                        ctx.save(); // Save default canvas state
+                        
                         if (typeof obj.sprite === 'string') {
-                            ctx.fillStyle = currentColor; ctx.font = '30px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(obj.sprite, obj.x, obj.y);
+                            // Text/Emoji rendering
+                            ctx.translate(obj.x + 15, obj.y + 15); // Move camera to center of text
+                            ctx.rotate((obj.rotation || 0) * Math.PI / 180); // Rotate canvas
+                            ctx.scale(obj.scale || 1, obj.scale || 1); // Scale canvas
+                            
+                            ctx.fillStyle = currentColor; ctx.font = '30px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; 
+                            ctx.fillText(obj.sprite, -15, -15); // Draw offset by the center
                         } else if (obj.sprite && obj.sprite.type === 'pixelart') {
-                            let pSize = 4; // 8x8 grid scaled up to 32x32 to match tilemap scale
+                            // Pixel Art Rendering
+                            let pSize = 4; // Native resolution
+                            ctx.translate(obj.x + 16, obj.y + 16); // Move camera to center of 32x32 block
+                            ctx.rotate((obj.rotation || 0) * Math.PI / 180); // Rotate
+                            ctx.scale(obj.scale || 1, obj.scale || 1); // Scale
+                            
                             for(let r=0; r<obj.sprite.rows.length; r++) {
                                 let chars = obj.sprite.rows[r];
                                 for(let c=0; c<chars.length; c++) {
                                     let p = chars[c];
                                     if (p !== '.') {
                                         ctx.fillStyle = pColors[p] || currentColor;
-                                        ctx.fillRect(obj.x + (c * pSize), obj.y + (r * pSize), pSize, pSize);
+                                        // Draw offset by -16 so it rotates around its center perfectly
+                                        ctx.fillRect((c * pSize) - 16, (r * pSize) - 16, pSize, pSize);
                                     }
                                 }
                             }
                         }
+                        
+                        ctx.restore(); // Snap canvas back to normal!
                         ip++; continue;
                     }
                     
@@ -673,10 +698,12 @@ end program
                         ip++; continue;
                     }
 
-                    let objAddMatch = line.match(/^add (\d+) to (\w+)'s (x|y)$/);
-                    if (objAddMatch) { variables[objAddMatch[2]][objAddMatch[3]] += Number(objAddMatch[1]); ip++; continue; }
-                    let objSubMatch = line.match(/^subtract (\d+) from (\w+)'s (x|y)$/);
-                    if (objSubMatch) { variables[objSubMatch[2]][objSubMatch[3]] -= Number(objSubMatch[1]); ip++; continue; }
+                    // --- NEW MATH LOGIC FOR TRANSFORMS ---
+                    let objAddMatch = line.match(/^add (.+) to (\w+)'s (x|y|scale|rotation)$/);
+                    if (objAddMatch) { variables[objAddMatch[2]][objAddMatch[3]] += Number(getValue(objAddMatch[1])); ip++; continue; }
+                    
+                    let objSubMatch = line.match(/^subtract (.+) from (\w+)'s (x|y|scale|rotation)$/);
+                    if (objSubMatch) { variables[objSubMatch[2]][objSubMatch[3]] -= Number(getValue(objSubMatch[1])); ip++; continue; }
 
                     if (line === "clear canvas") { ctx.clearRect(0, 0, canvas.width, canvas.height); ip++; continue; }
                     if (line === "end program") { print("--- Program Terminated ---", 'system'); return; }
