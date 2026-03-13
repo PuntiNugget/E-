@@ -66,7 +66,6 @@
         .color-btn.selected { border: 2px solid #fff; transform: scale(1.1); }
         .color-R { background: #ff5e5e; } .color-G { background: #238636; } .color-B { background: #007fd4; }
         .color-Y { background: #e3b341; } .color-W { background: #ffffff; } .color-K { background: #333; }
-        /* Eraser styling */
         .color-eraser { background: #2d2d2d; }
         
         .export-btn { margin-top: 15px; background: #238636; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
@@ -96,9 +95,9 @@
             <div class="editor-wrapper">
                 <div id="line-numbers" class="line-numbers">1</div>
                 <textarea id="editor" spellcheck="false" wrap="off">
-print "Transform Controls Online!"
+print "Vector Math Online!"
 
-create pixelart sword
+create pixelart ship
     ".......W"
     "......WW"
     ".....WW."
@@ -109,34 +108,38 @@ create pixelart sword
     ".Y......"
 end pixelart
 
-set object player to sword at x 180 y 150
+set object player to ship at x 50 y 50
 set player's scale to 2
+
+// Creating a Vector2!
+set vector2 velocity to x 2 y 2
 
 set boolean gameIsRunning to true
 
 while gameIsRunning is true
     clear canvas
     
-    // Rotate constantly!
-    add 5 to player's rotation
+    // Add the vector directly to the object!
+    add velocity to player
     
-    if you pressed "arrow right"
-        add 5 to player's x
-    end if
-    if you pressed "arrow left"
-        subtract 5 from player's x
-    end if
+    // Math checks
+    add 2 to player's rotation
     
-    // Scale controls!
-    if you pressed "arrow up"
-        add 0.1 to player's scale
+    // Bounce off walls simply
+    if player's x is greater than 350
+        multiply velocity's x by -1
     end if
-    if you pressed "arrow down"
-        subtract 0.1 to player's scale
+    if player's x is less than 0
+        multiply velocity's x by -1
+    end if
+    if player's y is greater than 250
+        multiply velocity's y by -1
+    end if
+    if player's y is less than 0
+        multiply velocity's y by -1
     end if
     
     draw object player
-
     wait 30 milliseconds
 end while
 end program
@@ -218,11 +221,11 @@ end program
         const autocompleteBar = document.getElementById('autocomplete-bar');
         
         const engineKeywords = [
-            "create", "tilemap", "pixelart", "function", "end", "set", "object", "number", "string", "boolean", 
+            "create", "tilemap", "pixelart", "function", "end", "set", "object", "number", "string", "boolean", "vector2",
             "to", "at", "x", "y", "scale", "rotation", "clear", "canvas", "draw", "sprite", "text", "run", "if", "while", 
             "is", "true", "false", "raycast", "from", "hits", "does", "not", "hit", "in", "move", 
             "towards", "by", "wait", "milliseconds", "seconds", "you", "pressed", "touching", "tile",
-            "print", "add", "subtract", "color"
+            "print", "add", "subtract", "multiply", "divide", "color"
         ];
         
         let customVariables = new Set();
@@ -336,20 +339,17 @@ end program
         
         for (let i = 0; i < 8 * 8; i++) {
             let cell = document.createElement('div'); 
-            cell.className = 'sprite-cell'; 
-            cell.dataset.char = '.';
+            cell.className = 'sprite-cell'; cell.dataset.char = '.';
             
             function applyPixel(el) {
                 el.dataset.char = currentPixel;
-                // If transparent/eraser, clear background, otherwise set color
                 el.style.backgroundColor = currentPixel === '.' ? 'transparent' : pColors[currentPixel];
             }
             
             cell.addEventListener('mousedown', (e) => { isSpriteDrawing = true; applyPixel(e.target); });
             cell.addEventListener('mouseenter', (e) => { if (isSpriteDrawing) applyPixel(e.target); });
             
-            spriteCells.push(cell);
-            spriteGrid.appendChild(cell);
+            spriteCells.push(cell); spriteGrid.appendChild(cell);
         }
 
         function exportSprite() {
@@ -360,8 +360,7 @@ end program
                 rowStr += '"\n'; output += rowStr;
             }
             output += "end pixelart";
-            navigator.clipboard.writeText(output);
-            alert("Sprite copied! Paste it into your code.");
+            navigator.clipboard.writeText(output); alert("Sprite copied! Paste it into your code.");
         }
 
         // --- ENGINE ---
@@ -389,10 +388,7 @@ end program
 
         function checkSyntax() {
             const lines = editor.value.split('\n');
-            let hasError = false;
-            let inTilemap = false;
-            let inPixelArt = false;
-            
+            let hasError = false; let inTilemap = false; let inPixelArt = false;
             customVariables.clear();
 
             for (let i = 0; i < lines.length; i++) {
@@ -407,29 +403,22 @@ end program
                 let isValidCommand = false;
 
                 if (inTilemap) {
-                    if (line === "end tilemap") inTilemap = false;
-                    isValidCommand = true; 
+                    if (line === "end tilemap") inTilemap = false; isValidCommand = true; 
                 } 
                 else if (inPixelArt) {
-                    if (line === "end pixelart") inPixelArt = false;
-                    isValidCommand = true; 
+                    if (line === "end pixelart") inPixelArt = false; isValidCommand = true; 
                 }
-                else if (line.match(/^create tilemap (\w+)$/)) {
-                    customVariables.add(line.match(/^create tilemap (\w+)$/)[1]);
-                    inTilemap = true; isValidCommand = true;
-                }
-                else if (line.match(/^create pixelart (\w+)$/)) {
-                    customVariables.add(line.match(/^create pixelart (\w+)$/)[1]);
-                    inPixelArt = true; isValidCommand = true;
-                }
+                else if (line.match(/^create tilemap (\w+)$/)) { customVariables.add(line.match(/^create tilemap (\w+)$/)[1]); inTilemap = true; isValidCommand = true; }
+                else if (line.match(/^create pixelart (\w+)$/)) { customVariables.add(line.match(/^create pixelart (\w+)$/)[1]); inPixelArt = true; isValidCommand = true; }
+                
+                else if (line.match(/^set vector2 (\w+) to x (.+) y (.+)$/)) { customVariables.add(line.match(/^set vector2 (\w+) to x (.+) y (.+)$/)[1]); isValidCommand = true; }
+                
                 else if (line.match(/^draw tilemap (\w+) at x (.+) y (.+)$/)) isValidCommand = true;
                 else if (line.match(/^play sound "(.+)"$/)) isValidCommand = true;
                 else if (line.match(/^if (\w+) is touching tile "([^"]+)" in (\w+)$/)) isValidCommand = true;
                 else if (line.match(/^if raycast from (\w+) to (\w+) (hits|does not hit) "([^"]+)" in (\w+)$/)) isValidCommand = true;
                 
-                // --- NEW LINTER RULES FOR SCALE AND ROTATION ---
                 else if (line.match(/^set (\w+)'s (x|y|scale|rotation) to (.+)$/)) isValidCommand = true;
-                
                 else if (line.match(/^set (\w+) to (.+)$/)) isValidCommand = true;
                 else if (line.match(/^set color to "([^"]+)"$/)) isValidCommand = true;
 
@@ -445,12 +434,17 @@ end program
                     else if (setObjMatch) { customVariables.add(setObjMatch[1]); isValidCommand = true; }
                     
                     else if (line.startsWith('print ')) isValidCommand = true;
+                    
                     else if (line.match(/^add (.+) to (\w+)$/)) isValidCommand = true;
                     else if (line.match(/^subtract (.+) from (\w+)$/)) isValidCommand = true;
+                    else if (line.match(/^multiply (.+) by (\w+)$/)) isValidCommand = true;
+                    else if (line.match(/^divide (.+) by (\w+)$/)) isValidCommand = true;
                     
-                    // --- NEW LINTER RULES FOR MATH ON TRANSFORMS ---
+                    // Transform math
                     else if (line.match(/^add (.+) to (\w+)'s (x|y|scale|rotation)$/)) isValidCommand = true;
                     else if (line.match(/^subtract (.+) from (\w+)'s (x|y|scale|rotation)$/)) isValidCommand = true;
+                    else if (line.match(/^multiply (\w+)'s (x|y|scale|rotation) by (.+)$/)) isValidCommand = true;
+                    else if (line.match(/^divide (\w+)'s (x|y|scale|rotation) by (.+)$/)) isValidCommand = true;
                     
                     else if (line.match(/^move (\w+) towards (\w+) by (\d+)$/)) isValidCommand = true;
                     else if (line.match(/^draw object (\w+)$/)) isValidCommand = true;
@@ -469,43 +463,26 @@ end program
                     else if (line.match(/^run (\w+)$/)) isValidCommand = true;
                 }
 
-                if (!isValidCommand) {
-                    showError(i + 1, `Unrecognized command: '${line}'`);
-                    hasError = true; break;
-                }
+                if (!isValidCommand) { showError(i + 1, `Unrecognized command: '${line}'`); hasError = true; break; }
             }
-            if (!hasError) {
-                linterBar.className = 'linter-good'; linterBar.textContent = 'Syntax OK - Ready to Run';
-                document.getElementById('runBtn').disabled = false;
-            }
+            if (!hasError) { linterBar.className = 'linter-good'; linterBar.textContent = 'Syntax OK - Ready to Run'; document.getElementById('runBtn').disabled = false; }
         }
 
-        function showError(lineNumber, message) {
-            linterBar.className = 'linter-bad'; linterBar.textContent = `Error on Line ${lineNumber}: ${message}`;
-            document.getElementById('runBtn').disabled = true; 
-        }
+        function showError(lineNumber, message) { linterBar.className = 'linter-bad'; linterBar.textContent = `Error on Line ${lineNumber}: ${message}`; document.getElementById('runBtn').disabled = true; }
 
         let isRunning = false; 
 
         async function startExecution() {
             const runBtn = document.getElementById('runBtn');
             runBtn.disabled = true; runBtn.innerText = "Running...";
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            activeKeys.clear(); canvas.focus(); isRunning = true;
+            ctx.clearRect(0, 0, canvas.width, canvas.height); activeKeys.clear(); canvas.focus(); isRunning = true;
             await runESharp();
-            runBtn.disabled = false; runBtn.innerText = "Run Program";
-            isRunning = false;
+            runBtn.disabled = false; runBtn.innerText = "Run Program"; isRunning = false;
         }
 
         async function runESharp() {
-            const code = document.getElementById('editor').value;
-            const consoleOut = document.getElementById('console');
-            consoleOut.innerHTML = '';
-            
-            let variables = {};
-            let lines = code.split('\n');
-            let ip = 0; let functions = {}; let callStack = [];
-            let currentColor = '#ffffff';
+            const code = document.getElementById('editor').value; const consoleOut = document.getElementById('console'); consoleOut.innerHTML = '';
+            let variables = {}; let lines = code.split('\n'); let ip = 0; let functions = {}; let callStack = []; let currentColor = '#ffffff';
 
             for(let j=0; j<lines.length; j++) {
                 let funcMatch = lines[j].trim().match(/^create function (\w+)$/);
@@ -514,8 +491,7 @@ end program
 
             function print(text, type = 'normal') {
                 const span = document.createElement('div'); span.textContent = text;
-                if (type === 'error') span.className = 'error';
-                if (type === 'system') span.className = 'system';
+                if (type === 'error') span.className = 'error'; if (type === 'system') span.className = 'system';
                 consoleOut.appendChild(span); consoleOut.scrollTop = consoleOut.scrollHeight;
             }
 
@@ -531,7 +507,7 @@ end program
                 if (valStr.endsWith("'s rotation")) { let obj = valStr.replace("'s rotation", ""); return variables[obj].rotation; }
 
                 if (variables[valStr] !== undefined) {
-                    if (variables[valStr].type === 'pixelart') return variables[valStr];
+                    if (['pixelart', 'object', 'vector2'].includes(variables[valStr].type)) return variables[valStr];
                     return variables[valStr].value;
                 }
                 throw new Error(`Unknown variable: '${valStr}'`);
@@ -547,53 +523,38 @@ end program
                     let colorMatch = line.match(/^set color to "([^"]+)"$/);
                     if (colorMatch) { currentColor = colorMatch[1]; ip++; continue; }
 
+                    let vecMatch = line.match(/^set vector2 (\w+) to x (.+) y (.+)$/);
+                    if (vecMatch) { variables[vecMatch[1]] = { type: 'vector2', x: getValue(vecMatch[2]), y: getValue(vecMatch[3]) }; ip++; continue; }
+
                     let pixelArtMatch = line.match(/^create pixelart (\w+)$/);
                     if (pixelArtMatch) {
                         let name = pixelArtMatch[1]; let rows = []; let depth = 1;
-                        while(depth > 0) {
-                            ip++;
-                            let tLine = lines[ip].trim();
-                            if (tLine === "end pixelart") depth--;
-                            else if (tLine.startsWith('"') && tLine.endsWith('"')) rows.push(tLine.substring(1, tLine.length - 1));
-                        }
-                        variables[name] = { type: 'pixelart', rows: rows };
-                        ip++; continue;
+                        while(depth > 0) { ip++; let tLine = lines[ip].trim(); if (tLine === "end pixelart") depth--; else if (tLine.startsWith('"') && tLine.endsWith('"')) rows.push(tLine.substring(1, tLine.length - 1)); }
+                        variables[name] = { type: 'pixelart', rows: rows }; ip++; continue;
                     }
 
                     let mapCreateMatch = line.match(/^create tilemap (\w+)$/);
                     if (mapCreateMatch) {
                         let mapName = mapCreateMatch[1]; let mapRows = []; let depth = 1;
-                        while(depth > 0) {
-                            ip++;
-                            let tLine = lines[ip].trim();
-                            if (tLine === "end tilemap") depth--;
-                            else if (tLine.startsWith('"') && tLine.endsWith('"')) mapRows.push(tLine.substring(1, tLine.length - 1));
-                        }
-                        variables[mapName] = { type: 'tilemap', rows: mapRows, lastX: 0, lastY: 0 };
-                        ip++; continue;
+                        while(depth > 0) { ip++; let tLine = lines[ip].trim(); if (tLine === "end tilemap") depth--; else if (tLine.startsWith('"') && tLine.endsWith('"')) mapRows.push(tLine.substring(1, tLine.length - 1)); }
+                        variables[mapName] = { type: 'tilemap', rows: mapRows, lastX: 0, lastY: 0 }; ip++; continue;
                     }
 
                     let drawMapMatch = line.match(/^draw tilemap (\w+) at x (.+) y (.+)$/);
                     if (drawMapMatch) {
-                        let mapData = variables[drawMapMatch[1]];
-                        mapData.lastX = getValue(drawMapMatch[2]); mapData.lastY = getValue(drawMapMatch[3]);
+                        let mapData = variables[drawMapMatch[1]]; mapData.lastX = getValue(drawMapMatch[2]); mapData.lastY = getValue(drawMapMatch[3]);
                         ctx.fillStyle = currentColor; ctx.font = '30px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-                        for (let r = 0; r < mapData.rows.length; r++) {
-                            let chars = Array.from(mapData.rows[r]); 
-                            for (let c = 0; c < chars.length; c++) { ctx.fillText(chars[c], mapData.lastX + (c * 30), mapData.lastY + (r * 30)); }
-                        }
+                        for (let r = 0; r < mapData.rows.length; r++) { let chars = Array.from(mapData.rows[r]); for (let c = 0; c < chars.length; c++) { ctx.fillText(chars[c], mapData.lastX + (c * 30), mapData.lastY + (r * 30)); } }
                         ip++; continue;
                     }
 
-                    // --- NEW PROP SETTER (HANDLES SCALE/ROTATION) ---
                     let setPropMatch = line.match(/^set (\w+)'s (x|y|scale|rotation) to (.+)$/);
                     if (setPropMatch) { variables[setPropMatch[1]][setPropMatch[2]] = getValue(setPropMatch[3]); ip++; continue; }
 
                     let updateMatch = line.match(/^set (\w+) to (.+)$/);
-                    if (updateMatch && !["number", "string", "boolean", "object", "color"].includes(updateMatch[1])) {
+                    if (updateMatch && !["number", "string", "boolean", "object", "vector2", "color"].includes(updateMatch[1])) {
                         let varName = updateMatch[1];
-                        if (variables[varName]) { variables[varName].value = getValue(updateMatch[2]); } 
-                        else { throw new Error(`Variable '${varName}' not found.`); }
+                        if (variables[varName]) { variables[varName].value = getValue(updateMatch[2]); } else { throw new Error(`Variable '${varName}' not found.`); }
                         ip++; continue;
                     }
 
@@ -601,15 +562,11 @@ end program
                     if (raycastMatch) {
                         let obj1 = variables[raycastMatch[1]], obj2 = variables[raycastMatch[2]], condition = raycastMatch[3], targetEmoji = raycastMatch[4], mapData = variables[raycastMatch[5]];
                         let startX = obj1.x + 15, startY = obj1.y + 15, endX = obj2.x + 15, endY = obj2.y + 15;
-                        let dx = endX - startX, dy = endY - startY; let distance = Math.sqrt(dx*dx + dy*dy);
-                        let steps = Math.max(1, Math.floor(distance / 5)); let hitWall = false;
+                        let dx = endX - startX, dy = endY - startY; let distance = Math.sqrt(dx*dx + dy*dy); let steps = Math.max(1, Math.floor(distance / 5)); let hitWall = false;
                         for (let i = 0; i <= steps; i++) {
                             let checkX = startX + (dx / steps) * i, checkY = startY + (dy / steps) * i;
                             let col = Math.floor((checkX - mapData.lastX) / 30), row = Math.floor((checkY - mapData.lastY) / 30);
-                            if (row >= 0 && row < mapData.rows.length) {
-                                let chars = Array.from(mapData.rows[row]);
-                                if (col >= 0 && col < chars.length) { if (chars[col] === targetEmoji) { hitWall = true; break; } }
-                            }
+                            if (row >= 0 && row < mapData.rows.length) { let chars = Array.from(mapData.rows[row]); if (col >= 0 && col < chars.length) { if (chars[col] === targetEmoji) { hitWall = true; break; } } }
                         }
                         let shouldRunBlock = (condition === "hits" && hitWall) || (condition === "does not hit" && !hitWall);
                         if (!shouldRunBlock) { let depth = 1; while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; } }
@@ -619,7 +576,7 @@ end program
                     let tileCollisionMatch = line.match(/^if (\w+) is touching tile "([^"]+)" in (\w+)$/);
                     if (tileCollisionMatch) {
                         let obj = variables[tileCollisionMatch[1]], targetEmoji = tileCollisionMatch[2], mapData = variables[tileCollisionMatch[3]];
-                        let isTouching = false, tileSize = 30, objSize = 25 * obj.scale; // Factor in scale for collision!
+                        let isTouching = false, tileSize = 30, objSize = 25 * obj.scale;
                         for (let r = 0; r < mapData.rows.length; r++) {
                             let chars = Array.from(mapData.rows[r]);
                             for (let c = 0; c < chars.length; c++) {
@@ -644,47 +601,24 @@ end program
                     let runMatch = line.match(/^run (\w+)$/);
                     if (runMatch) { callStack.push(ip); ip = functions[runMatch[1]] + 1; continue; }
 
-                    // --- INITIALIZE OBJECTS WITH TRANSFORM PROPS ---
                     let setObjMatch = line.match(/^set object (\w+) to (.+) at x (.+) y (.+)$/);
                     if (setObjMatch) { variables[setObjMatch[1]] = { type: 'object', sprite: getValue(setObjMatch[2]), x: getValue(setObjMatch[3]), y: getValue(setObjMatch[4]), scale: 1, rotation: 0 }; ip++; continue; }
 
-                    // --- TRANSFORM RENDERING LOGIC ---
                     let drawObjMatch = line.match(/^draw object (\w+)$/);
                     if (drawObjMatch) {
                         let obj = variables[drawObjMatch[1]];
-                        
-                        ctx.save(); // Save default canvas state
-                        
+                        ctx.save(); 
                         if (typeof obj.sprite === 'string') {
-                            // Text/Emoji rendering
-                            ctx.translate(obj.x + 15, obj.y + 15); // Move camera to center of text
-                            ctx.rotate((obj.rotation || 0) * Math.PI / 180); // Rotate canvas
-                            ctx.scale(obj.scale || 1, obj.scale || 1); // Scale canvas
-                            
-                            ctx.fillStyle = currentColor; ctx.font = '30px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; 
-                            ctx.fillText(obj.sprite, -15, -15); // Draw offset by the center
+                            ctx.translate(obj.x + 15, obj.y + 15); ctx.rotate((obj.rotation || 0) * Math.PI / 180); ctx.scale(obj.scale || 1, obj.scale || 1);
+                            ctx.fillStyle = currentColor; ctx.font = '30px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(obj.sprite, -15, -15);
                         } else if (obj.sprite && obj.sprite.type === 'pixelart') {
-                            // Pixel Art Rendering
-                            let pSize = 4; // Native resolution
-                            ctx.translate(obj.x + 16, obj.y + 16); // Move camera to center of 32x32 block
-                            ctx.rotate((obj.rotation || 0) * Math.PI / 180); // Rotate
-                            ctx.scale(obj.scale || 1, obj.scale || 1); // Scale
-                            
+                            let pSize = 4; ctx.translate(obj.x + 16, obj.y + 16); ctx.rotate((obj.rotation || 0) * Math.PI / 180); ctx.scale(obj.scale || 1, obj.scale || 1);
                             for(let r=0; r<obj.sprite.rows.length; r++) {
                                 let chars = obj.sprite.rows[r];
-                                for(let c=0; c<chars.length; c++) {
-                                    let p = chars[c];
-                                    if (p !== '.') {
-                                        ctx.fillStyle = pColors[p] || currentColor;
-                                        // Draw offset by -16 so it rotates around its center perfectly
-                                        ctx.fillRect((c * pSize) - 16, (r * pSize) - 16, pSize, pSize);
-                                    }
-                                }
+                                for(let c=0; c<chars.length; c++) { let p = chars[c]; if (p !== '.') { ctx.fillStyle = pColors[p] || currentColor; ctx.fillRect((c * pSize) - 16, (r * pSize) - 16, pSize, pSize); } }
                             }
                         }
-                        
-                        ctx.restore(); // Snap canvas back to normal!
-                        ip++; continue;
+                        ctx.restore(); ip++; continue;
                     }
                     
                     let drawTextMatch = line.match(/^draw text (.+) at x (.+) y (.+)$/);
@@ -698,12 +632,36 @@ end program
                         ip++; continue;
                     }
 
-                    // --- NEW MATH LOGIC FOR TRANSFORMS ---
+                    // --- UPDATED MATH LOGIC (Handles Vectors and Standard Additions) ---
+                    let addMatch = line.match(/^add (.+) to (\w+)$/);
+                    if (addMatch) {
+                        let val = getValue(addMatch[1]); let target = variables[addMatch[2]];
+                        if (target && ['object', 'vector2'].includes(target.type) && val && val.type === 'vector2') { target.x += val.x; target.y += val.y; } 
+                        else if (target) { target.value += val; }
+                        ip++; continue;
+                    }
+                    
+                    let subMatch = line.match(/^subtract (.+) from (\w+)$/);
+                    if (subMatch) {
+                        let val = getValue(subMatch[1]); let target = variables[subMatch[2]];
+                        if (target && ['object', 'vector2'].includes(target.type) && val && val.type === 'vector2') { target.x -= val.x; target.y -= val.y; } 
+                        else if (target) { target.value -= val; }
+                        ip++; continue;
+                    }
+
+                    let multMatch = line.match(/^multiply (\w+) by (.+)$/);
+                    if (multMatch) { variables[multMatch[1]].value *= getValue(multMatch[2]); ip++; continue; }
+                    let divMatch = line.match(/^divide (\w+) by (.+)$/);
+                    if (divMatch) { variables[divMatch[1]].value /= getValue(divMatch[2]); ip++; continue; }
+
                     let objAddMatch = line.match(/^add (.+) to (\w+)'s (x|y|scale|rotation)$/);
                     if (objAddMatch) { variables[objAddMatch[2]][objAddMatch[3]] += Number(getValue(objAddMatch[1])); ip++; continue; }
-                    
                     let objSubMatch = line.match(/^subtract (.+) from (\w+)'s (x|y|scale|rotation)$/);
                     if (objSubMatch) { variables[objSubMatch[2]][objSubMatch[3]] -= Number(getValue(objSubMatch[1])); ip++; continue; }
+                    let objMultMatch = line.match(/^multiply (\w+)'s (x|y|scale|rotation) by (.+)$/);
+                    if (objMultMatch) { variables[objMultMatch[1]][objMultMatch[2]] *= Number(getValue(objMultMatch[3])); ip++; continue; }
+                    let objDivMatch = line.match(/^divide (\w+)'s (x|y|scale|rotation) by (.+)$/);
+                    if (objDivMatch) { variables[objDivMatch[1]][objDivMatch[2]] /= Number(getValue(objDivMatch[3])); ip++; continue; }
 
                     if (line === "clear canvas") { ctx.clearRect(0, 0, canvas.width, canvas.height); ip++; continue; }
                     if (line === "end program") { print("--- Program Terminated ---", 'system'); return; }
@@ -745,11 +703,9 @@ end program
             } catch (err) { print(`Error on line ${ip + 1}: ${err.message}`, 'error'); }
         }
 
-        // --- SAVE / LOAD SYSTEM ---
         function saveCode() {
             localStorage.setItem('eSharpSavedCode', editor.value);
-            const saveBtn = event.target;
-            const originalText = saveBtn.innerText;
+            const saveBtn = event.target; const originalText = saveBtn.innerText;
             saveBtn.innerText = "✅ Saved!"; saveBtn.style.background = "#238636";
             setTimeout(() => { saveBtn.innerText = originalText; saveBtn.style.background = "#444"; }, 1000);
         }
