@@ -53,12 +53,23 @@
         
         #console { flex: 1; padding: 15px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; white-space: pre-wrap; display: flex; flex-direction: column; }
         
-        .map-editor { flex: 1; display: flex; flex-direction: column; padding: 10px; align-items: center; }
+        .map-editor { flex: 1; display: flex; flex-direction: column; padding: 10px; align-items: center; overflow-y: auto; }
         .palette { display: flex; gap: 10px; margin-bottom: 10px; }
         .palette-btn { font-size: 24px; background: none; border: 2px solid transparent; cursor: pointer; border-radius: 4px; padding: 2px; }
         .palette-btn.selected { border: 2px solid #ff5e5e; background: #444; }
+        
         #map-grid { display: grid; grid-template-columns: repeat(13, 25px); grid-template-rows: repeat(8, 25px); gap: 1px; background: #444; border: 2px solid #555; }
         .grid-cell { background: #111; display: flex; justify-content: center; align-items: center; font-size: 18px; cursor: pointer; user-select: none; }
+        
+        /* --- NEW: SPRITE EDITOR STYLES --- */
+        #sprite-grid { display: grid; grid-template-columns: repeat(8, 30px); grid-template-rows: repeat(8, 30px); gap: 1px; background: #444; border: 2px solid #555; }
+        .sprite-cell { background: #111; cursor: pointer; user-select: none; }
+        .color-btn { width: 30px; height: 30px; border: 2px solid #444; cursor: pointer; border-radius: 4px; }
+        .color-btn.selected { border: 2px solid #fff; transform: scale(1.1); }
+        .color-R { background: #ff5e5e; } .color-G { background: #238636; } .color-B { background: #007fd4; }
+        .color-Y { background: #e3b341; } .color-W { background: #ffffff; } .color-K { background: #333; }
+        .color-blank { background: repeating-linear-gradient(45deg, #222, #222 5px, #111 5px, #111 10px); }
+        
         .export-btn { margin-top: 15px; background: #238636; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         
         .error { color: #ff7b72; }
@@ -86,60 +97,39 @@
             <div class="editor-wrapper">
                 <div id="line-numbers" class="line-numbers">1</div>
                 <textarea id="editor" spellcheck="false" wrap="off">
-print "Retro ASCII Mode Enabled! Click canvas to move."
+print "Pixel Art Mode Online! Use Arrow Keys."
 
-create tilemap retroLevel
-    "#############"
-    "#...........#"
-    "#.1.......2.#"
-    "#...........#"
-    "#...#####...#"
-    "#...........#"
-    "#...........#"
-    "#############"
-end tilemap
+create pixelart hero
+    ".RRRRRR."
+    "RWWWWWWW"
+    "RRRRRRRR"
+    "R.RRRR.R"
+    "R.RRRR.R"
+    "..RRRR.."
+    ".RR..RR."
+    ".R....R."
+end pixelart
 
-set object player to "@" at x 180 y 200
+set object player to hero at x 180 y 150
 
 set boolean gameIsRunning to true
 
 while gameIsRunning is true
     clear canvas
     
-    // Draw the level in green
-    set color to "lime"
-    draw tilemap retroLevel at x 5 y 30
-    
     if you pressed "arrow right"
         add 5 to player's x
-        if player is touching tile "#" in retroLevel
-            subtract 5 from player's x
-        end if
     end if
-
     if you pressed "arrow left"
         subtract 5 from player's x
-        if player is touching tile "#" in retroLevel
-            add 5 to player's x
-        end if
     end if
-
     if you pressed "arrow up"
         subtract 5 from player's y
-        if player is touching tile "#" in retroLevel
-            add 5 to player's y
-        end if
     end if
-
     if you pressed "arrow down"
         add 5 to player's y
-        if player is touching tile "#" in retroLevel
-            subtract 5 from player's y
-        end if
     end if
     
-    // Draw the player in cyan
-    set color to "cyan"
     draw object player
 
     wait 30 milliseconds
@@ -164,7 +154,8 @@ end program
             <div class="tabs-panel">
                 <div class="tab-buttons">
                     <button class="tab-btn active" onclick="switchTab('terminal')">Live Terminal</button>
-                    <button class="tab-btn" onclick="switchTab('mapeditor')">Tilemap Editor</button>
+                    <button class="tab-btn" onclick="switchTab('mapeditor')">Tilemap</button>
+                    <button class="tab-btn" onclick="switchTab('spriteeditor')">Sprite Editor</button>
                 </div>
                 
                 <div id="tab-terminal" class="tab-content active">
@@ -182,9 +173,26 @@ end program
                             <button class="palette-btn" onclick="selectTile('#')">#</button>
                         </div>
                         <div id="map-grid"></div>
-                        <button class="export-btn" onclick="exportMap()">Copy Map Code to Clipboard</button>
+                        <button class="export-btn" onclick="exportMap()">Copy Map Code</button>
                     </div>
                 </div>
+
+                <div id="tab-spriteeditor" class="tab-content">
+                    <div class="map-editor">
+                        <div class="palette">
+                            <button class="color-btn color-R selected" onclick="selectPixelColor('R', this)"></button>
+                            <button class="color-btn color-G" onclick="selectPixelColor('G', this)"></button>
+                            <button class="color-btn color-B" onclick="selectPixelColor('B', this)"></button>
+                            <button class="color-btn color-Y" onclick="selectPixelColor('Y', this)"></button>
+                            <button class="color-btn color-W" onclick="selectPixelColor('W', this)"></button>
+                            <button class="color-btn color-K" onclick="selectPixelColor('K', this)"></button>
+                            <button class="color-btn color-blank" onclick="selectPixelColor('.', this)"></button>
+                        </div>
+                        <div id="sprite-grid"></div>
+                        <button class="export-btn" onclick="exportSprite()">Copy Sprite Code</button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -198,13 +206,13 @@ end program
             document.getElementById('tab-' + tabId).classList.add('active');
         }
 
-        // --- IDE FEATURES (Line Numbers & Autocomplete) ---
+        // --- IDE FEATURES ---
         const editor = document.getElementById('editor');
         const lineNumbers = document.getElementById('line-numbers');
         const autocompleteBar = document.getElementById('autocomplete-bar');
         
         const engineKeywords = [
-            "create", "tilemap", "function", "end", "set", "object", "number", "string", "boolean", 
+            "create", "tilemap", "pixelart", "function", "end", "set", "object", "number", "string", "boolean", 
             "to", "at", "x", "y", "clear", "canvas", "draw", "sprite", "text", "run", "if", "while", 
             "is", "true", "false", "raycast", "from", "hits", "does", "not", "hit", "in", "move", 
             "towards", "by", "wait", "milliseconds", "seconds", "you", "pressed", "touching", "tile",
@@ -221,9 +229,7 @@ end program
             lineNumbers.innerHTML = Array(lines).fill(0).map((_, i) => i + 1).join('<br>');
         }
         
-        editor.addEventListener('scroll', () => {
-            lineNumbers.scrollTop = editor.scrollTop;
-        });
+        editor.addEventListener('scroll', () => { lineNumbers.scrollTop = editor.scrollTop; });
 
         function extractCurrentWord() {
             const cursorPosition = editor.selectionStart;
@@ -257,31 +263,21 @@ end program
                     span.innerText = sugg;
                     autocompleteBar.appendChild(span);
                 });
-            } else {
-                autocompleteBar.innerHTML = '<span class="suggestion-hint">Typing...</span>';
-            }
+            } else { autocompleteBar.innerHTML = '<span class="suggestion-hint">Typing...</span>'; }
         }
 
-        editor.addEventListener('input', () => {
-            updateLineNumbers();
-            updateAutocomplete();
-            checkSyntax();
-        });
+        editor.addEventListener('input', () => { updateLineNumbers(); updateAutocomplete(); checkSyntax(); });
 
         editor.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') {
                 e.preventDefault(); 
-                
                 if (currentSuggestions.length > 0) {
                     const before = editor.value.substring(0, wordStartIndex);
                     const after = editor.value.substring(editor.selectionStart);
                     const suggestion = currentSuggestions[0];
-                    
                     editor.value = before + suggestion + " " + after;
                     editor.selectionStart = editor.selectionEnd = wordStartIndex + suggestion.length + 1;
-                    
-                    updateAutocomplete();
-                    checkSyntax();
+                    updateAutocomplete(); checkSyntax();
                 } else {
                     const start = editor.selectionStart;
                     const end = editor.selectionEnd;
@@ -304,14 +300,12 @@ end program
 
         let isDrawing = false;
         for (let i = 0; i < 13 * 8; i++) {
-            let cell = document.createElement('div');
-            cell.className = 'grid-cell';
-            cell.innerText = '🟩';
+            let cell = document.createElement('div'); cell.className = 'grid-cell'; cell.innerText = '🟩';
             cell.addEventListener('mousedown', (e) => { isDrawing = true; e.target.innerText = currentTile; });
             cell.addEventListener('mouseenter', (e) => { if (isDrawing) e.target.innerText = currentTile; });
             mapGrid.appendChild(cell);
         }
-        document.addEventListener('mouseup', () => isDrawing = false);
+        document.addEventListener('mouseup', () => { isDrawing = false; isSpriteDrawing = false; });
 
         function exportMap() {
             let cells = document.querySelectorAll('.grid-cell');
@@ -323,7 +317,50 @@ end program
             }
             output += "end tilemap";
             navigator.clipboard.writeText(output);
-            alert("Map E# code copied! Paste it into your editor.");
+            alert("Map copied! Paste it into your code.");
+        }
+
+        // --- SPRITE EDITOR ---
+        let currentPixel = 'R';
+        const spriteGrid = document.getElementById('sprite-grid');
+        let spriteCells = [];
+        
+        function selectPixelColor(colorChar, btnElement) {
+            currentPixel = colorChar;
+            document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('selected'));
+            btnElement.classList.add('selected');
+        }
+
+        let isSpriteDrawing = false;
+        const pColors = {'R':'#ff5e5e','G':'#238636','B':'#007fd4','Y':'#e3b341','W':'#ffffff','K':'#333','.':'transparent'};
+        
+        for (let i = 0; i < 8 * 8; i++) {
+            let cell = document.createElement('div'); 
+            cell.className = 'sprite-cell'; 
+            cell.dataset.char = '.';
+            
+            function applyPixel(el) {
+                el.dataset.char = currentPixel;
+                el.style.backgroundColor = pColors[currentPixel];
+            }
+            
+            cell.addEventListener('mousedown', (e) => { isSpriteDrawing = true; applyPixel(e.target); });
+            cell.addEventListener('mouseenter', (e) => { if (isSpriteDrawing) applyPixel(e.target); });
+            
+            spriteCells.push(cell);
+            spriteGrid.appendChild(cell);
+        }
+
+        function exportSprite() {
+            let output = "create pixelart mySprite\n";
+            for(let r=0; r<8; r++) {
+                let rowStr = '    "';
+                for(let c=0; c<8; c++) { rowStr += spriteCells[r * 8 + c].dataset.char; }
+                rowStr += '"\n'; output += rowStr;
+            }
+            output += "end pixelart";
+            navigator.clipboard.writeText(output);
+            alert("Sprite copied! Paste it into your code.");
         }
 
         // --- ENGINE ---
@@ -331,25 +368,20 @@ end program
         const linterBar = document.getElementById('linter-bar');
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-
         const activeKeys = new Set();
         
         canvas.addEventListener('keydown', (e) => {
             let keyName = e.key.toLowerCase();
-            if (keyName === "arrowup") keyName = "arrow up";
-            if (keyName === "arrowdown") keyName = "arrow down";
-            if (keyName === "arrowleft") keyName = "arrow left";
-            if (keyName === "arrowright") keyName = "arrow right";
+            if (keyName === "arrowup") keyName = "arrow up"; if (keyName === "arrowdown") keyName = "arrow down";
+            if (keyName === "arrowleft") keyName = "arrow left"; if (keyName === "arrowright") keyName = "arrow right";
             if (keyName === " ") keyName = "space";
             activeKeys.add(keyName);
             if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].indexOf(e.code) > -1) e.preventDefault();
         });
         canvas.addEventListener('keyup', (e) => {
             let keyName = e.key.toLowerCase();
-            if (keyName === "arrowup") keyName = "arrow up";
-            if (keyName === "arrowdown") keyName = "arrow down";
-            if (keyName === "arrowleft") keyName = "arrow left";
-            if (keyName === "arrowright") keyName = "arrow right";
+            if (keyName === "arrowup") keyName = "arrow up"; if (keyName === "arrowdown") keyName = "arrow down";
+            if (keyName === "arrowleft") keyName = "arrow left"; if (keyName === "arrowright") keyName = "arrow right";
             if (keyName === " ") keyName = "space";
             activeKeys.delete(keyName);
         });
@@ -358,6 +390,7 @@ end program
             const lines = editor.value.split('\n');
             let hasError = false;
             let inTilemap = false;
+            let inPixelArt = false; // NEW LINTER RULE
             
             customVariables.clear();
 
@@ -375,9 +408,18 @@ end program
                 if (inTilemap) {
                     if (line === "end tilemap") inTilemap = false;
                     isValidCommand = true; 
-                } else if (line.match(/^create tilemap (\w+)$/)) {
+                } 
+                else if (inPixelArt) {
+                    if (line === "end pixelart") inPixelArt = false;
+                    isValidCommand = true; 
+                }
+                else if (line.match(/^create tilemap (\w+)$/)) {
                     customVariables.add(line.match(/^create tilemap (\w+)$/)[1]);
                     inTilemap = true; isValidCommand = true;
+                }
+                else if (line.match(/^create pixelart (\w+)$/)) {
+                    customVariables.add(line.match(/^create pixelart (\w+)$/)[1]);
+                    inPixelArt = true; isValidCommand = true;
                 }
                 else if (line.match(/^draw tilemap (\w+) at x (.+) y (.+)$/)) isValidCommand = true;
                 else if (line.match(/^play sound "(.+)"$/)) isValidCommand = true;
@@ -385,7 +427,6 @@ end program
                 else if (line.match(/^if raycast from (\w+) to (\w+) (hits|does not hit) "([^"]+)" in (\w+)$/)) isValidCommand = true;
                 else if (line.match(/^set (\w+)'s (x|y) to (.+)$/)) isValidCommand = true;
                 else if (line.match(/^set (\w+) to (.+)$/)) isValidCommand = true;
-                // --- NEW LINTER RULE FOR COLOR ---
                 else if (line.match(/^set color to "([^"]+)"$/)) isValidCommand = true;
 
                 else {
@@ -423,22 +464,18 @@ end program
                 }
 
                 if (!isValidCommand) {
-                    showError(i + 1, `Unrecognized command or syntax: '${line}'`);
-                    hasError = true;
-                    break;
+                    showError(i + 1, `Unrecognized command: '${line}'`);
+                    hasError = true; break;
                 }
             }
-
             if (!hasError) {
-                linterBar.className = 'linter-good';
-                linterBar.textContent = 'Syntax OK - Ready to Run';
+                linterBar.className = 'linter-good'; linterBar.textContent = 'Syntax OK - Ready to Run';
                 document.getElementById('runBtn').disabled = false;
             }
         }
 
         function showError(lineNumber, message) {
-            linterBar.className = 'linter-bad';
-            linterBar.textContent = `Error on Line ${lineNumber}: ${message}`;
+            linterBar.className = 'linter-bad'; linterBar.textContent = `Error on Line ${lineNumber}: ${message}`;
             document.getElementById('runBtn').disabled = true; 
         }
 
@@ -461,11 +498,7 @@ end program
             
             let variables = {};
             let lines = code.split('\n');
-            let ip = 0;
-            let functions = {};
-            let callStack = [];
-            
-            // --- NEW: Track the current drawing color ---
+            let ip = 0; let functions = {}; let callStack = [];
             let currentColor = '#ffffff';
 
             for(let j=0; j<lines.length; j++) {
@@ -489,7 +522,11 @@ end program
                 if (valStr.endsWith("'s x")) { let obj = valStr.replace("'s x", ""); return variables[obj].x; }
                 if (valStr.endsWith("'s y")) { let obj = valStr.replace("'s y", ""); return variables[obj].y; }
 
-                if (variables[valStr] !== undefined) return variables[valStr].value;
+                if (variables[valStr] !== undefined) {
+                    // --- NEW: Return the full object if it's a pixelart, otherwise the primitive value
+                    if (variables[valStr].type === 'pixelart') return variables[valStr];
+                    return variables[valStr].value;
+                }
                 throw new Error(`Unknown variable: '${valStr}'`);
             }
 
@@ -500,10 +537,20 @@ end program
                     let line = lines[ip].trim();
                     if (!line || line.startsWith('//')) { ip++; continue; }
 
-                    // --- NEW: Handle Color Command ---
                     let colorMatch = line.match(/^set color to "([^"]+)"$/);
-                    if (colorMatch) {
-                        currentColor = colorMatch[1];
+                    if (colorMatch) { currentColor = colorMatch[1]; ip++; continue; }
+
+                    // --- NEW PARSER FOR PIXELART ---
+                    let pixelArtMatch = line.match(/^create pixelart (\w+)$/);
+                    if (pixelArtMatch) {
+                        let name = pixelArtMatch[1]; let rows = []; let depth = 1;
+                        while(depth > 0) {
+                            ip++;
+                            let tLine = lines[ip].trim();
+                            if (tLine === "end pixelart") depth--;
+                            else if (tLine.startsWith('"') && tLine.endsWith('"')) rows.push(tLine.substring(1, tLine.length - 1));
+                        }
+                        variables[name] = { type: 'pixelart', rows: rows };
                         ip++; continue;
                     }
 
@@ -523,77 +570,42 @@ end program
                     let drawMapMatch = line.match(/^draw tilemap (\w+) at x (.+) y (.+)$/);
                     if (drawMapMatch) {
                         let mapData = variables[drawMapMatch[1]];
-                        mapData.lastX = getValue(drawMapMatch[2]);
-                        mapData.lastY = getValue(drawMapMatch[3]);
-                        
-                        ctx.fillStyle = currentColor;
-                        ctx.font = '30px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+                        mapData.lastX = getValue(drawMapMatch[2]); mapData.lastY = getValue(drawMapMatch[3]);
+                        ctx.fillStyle = currentColor; ctx.font = '30px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
                         for (let r = 0; r < mapData.rows.length; r++) {
                             let chars = Array.from(mapData.rows[r]); 
-                            for (let c = 0; c < chars.length; c++) {
-                                ctx.fillText(chars[c], mapData.lastX + (c * 30), mapData.lastY + (r * 30));
-                            }
+                            for (let c = 0; c < chars.length; c++) { ctx.fillText(chars[c], mapData.lastX + (c * 30), mapData.lastY + (r * 30)); }
                         }
                         ip++; continue;
                     }
 
                     let setPropMatch = line.match(/^set (\w+)'s (x|y) to (.+)$/);
-                    if (setPropMatch) {
-                        variables[setPropMatch[1]][setPropMatch[2]] = getValue(setPropMatch[3]);
-                        ip++; continue;
-                    }
+                    if (setPropMatch) { variables[setPropMatch[1]][setPropMatch[2]] = getValue(setPropMatch[3]); ip++; continue; }
 
                     let updateMatch = line.match(/^set (\w+) to (.+)$/);
                     if (updateMatch && !["number", "string", "boolean", "object", "color"].includes(updateMatch[1])) {
                         let varName = updateMatch[1];
-                        if (variables[varName]) {
-                            variables[varName].value = getValue(updateMatch[2]);
-                        } else {
-                            throw new Error(`Variable '${varName}' not found. Create it first!`);
-                        }
+                        if (variables[varName]) { variables[varName].value = getValue(updateMatch[2]); } 
+                        else { throw new Error(`Variable '${varName}' not found.`); }
                         ip++; continue;
                     }
 
                     let raycastMatch = line.match(/^if raycast from (\w+) to (\w+) (hits|does not hit) "([^"]+)" in (\w+)$/);
                     if (raycastMatch) {
-                        let obj1 = variables[raycastMatch[1]], obj2 = variables[raycastMatch[2]];
-                        let condition = raycastMatch[3], targetEmoji = raycastMatch[4], mapData = variables[raycastMatch[5]];
-
-                        if (!obj1 || !obj2 || obj1.type !== 'object' || obj2.type !== 'object') throw new Error(`Raycast requires objects.`);
-                        if (!mapData || mapData.type !== 'tilemap') throw new Error(`Not a tilemap.`);
-
-                        let startX = obj1.x + 15, startY = obj1.y + 15;
-                        let endX = obj2.x + 15, endY = obj2.y + 15;
-
-                        let dx = endX - startX, dy = endY - startY;
-                        let distance = Math.sqrt(dx*dx + dy*dy);
-                        let steps = Math.max(1, Math.floor(distance / 5)); 
-                        let hitWall = false;
-
+                        let obj1 = variables[raycastMatch[1]], obj2 = variables[raycastMatch[2]], condition = raycastMatch[3], targetEmoji = raycastMatch[4], mapData = variables[raycastMatch[5]];
+                        let startX = obj1.x + 15, startY = obj1.y + 15, endX = obj2.x + 15, endY = obj2.y + 15;
+                        let dx = endX - startX, dy = endY - startY; let distance = Math.sqrt(dx*dx + dy*dy);
+                        let steps = Math.max(1, Math.floor(distance / 5)); let hitWall = false;
                         for (let i = 0; i <= steps; i++) {
-                            let checkX = startX + (dx / steps) * i;
-                            let checkY = startY + (dy / steps) * i;
-
-                            let col = Math.floor((checkX - mapData.lastX) / 30);
-                            let row = Math.floor((checkY - mapData.lastY) / 30);
-
+                            let checkX = startX + (dx / steps) * i, checkY = startY + (dy / steps) * i;
+                            let col = Math.floor((checkX - mapData.lastX) / 30), row = Math.floor((checkY - mapData.lastY) / 30);
                             if (row >= 0 && row < mapData.rows.length) {
                                 let chars = Array.from(mapData.rows[row]);
-                                if (col >= 0 && col < chars.length) {
-                                    if (chars[col] === targetEmoji) {
-                                        hitWall = true;
-                                        break;
-                                    }
-                                }
+                                if (col >= 0 && col < chars.length) { if (chars[col] === targetEmoji) { hitWall = true; break; } }
                             }
                         }
-
                         let shouldRunBlock = (condition === "hits" && hitWall) || (condition === "does not hit" && !hitWall);
-
-                        if (!shouldRunBlock) {
-                            let depth = 1;
-                            while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; }
-                        }
+                        if (!shouldRunBlock) { let depth = 1; while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; } }
                         ip++; continue;
                     }
 
@@ -601,7 +613,6 @@ end program
                     if (tileCollisionMatch) {
                         let obj = variables[tileCollisionMatch[1]], targetEmoji = tileCollisionMatch[2], mapData = variables[tileCollisionMatch[3]];
                         let isTouching = false, tileSize = 30, objSize = 25;
-
                         for (let r = 0; r < mapData.rows.length; r++) {
                             let chars = Array.from(mapData.rows[r]);
                             for (let c = 0; c < chars.length; c++) {
@@ -620,10 +631,7 @@ end program
                     if (playMatch) { new Audio(playMatch[1]).play().catch(e => {}); ip++; continue; }
 
                     let createFuncMatch = line.match(/^create function (\w+)$/);
-                    if (createFuncMatch) {
-                        let depth = 1; while(depth > 0) { ip++; if (lines[ip].trim().startsWith("create function ")) depth++; if (lines[ip].trim() === "end function") depth--; }
-                        ip++; continue;
-                    }
+                    if (createFuncMatch) { let depth = 1; while(depth > 0) { ip++; if (lines[ip].trim().startsWith("create function ")) depth++; if (lines[ip].trim() === "end function") depth--; } ip++; continue; }
 
                     if (line === "end function") { ip = callStack.pop(); ip++; continue; }
                     let runMatch = line.match(/^run (\w+)$/);
@@ -632,20 +640,30 @@ end program
                     let setObjMatch = line.match(/^set object (\w+) to (.+) at x (.+) y (.+)$/);
                     if (setObjMatch) { variables[setObjMatch[1]] = { type: 'object', sprite: getValue(setObjMatch[2]), x: getValue(setObjMatch[3]), y: getValue(setObjMatch[4]) }; ip++; continue; }
 
+                    // --- NEW: RENDER PIXELART LOGIC ---
                     let drawObjMatch = line.match(/^draw object (\w+)$/);
                     if (drawObjMatch) {
                         let obj = variables[drawObjMatch[1]];
-                        ctx.fillStyle = currentColor;
-                        ctx.font = '30px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(obj.sprite, obj.x, obj.y);
+                        if (typeof obj.sprite === 'string') {
+                            ctx.fillStyle = currentColor; ctx.font = '30px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(obj.sprite, obj.x, obj.y);
+                        } else if (obj.sprite && obj.sprite.type === 'pixelart') {
+                            let pSize = 4; // 8x8 grid scaled up to 32x32 to match tilemap scale
+                            for(let r=0; r<obj.sprite.rows.length; r++) {
+                                let chars = obj.sprite.rows[r];
+                                for(let c=0; c<chars.length; c++) {
+                                    let p = chars[c];
+                                    if (p !== '.') {
+                                        ctx.fillStyle = pColors[p] || currentColor;
+                                        ctx.fillRect(obj.x + (c * pSize), obj.y + (r * pSize), pSize, pSize);
+                                    }
+                                }
+                            }
+                        }
                         ip++; continue;
                     }
                     
                     let drawTextMatch = line.match(/^draw text (.+) at x (.+) y (.+)$/);
-                    if (drawTextMatch) { 
-                        ctx.fillStyle = currentColor; 
-                        ctx.font = '24px monospace'; ctx.fillText(getValue(drawTextMatch[1]), getValue(drawTextMatch[2]), getValue(drawTextMatch[3])); 
-                        ip++; continue; 
-                    }
+                    if (drawTextMatch) { ctx.fillStyle = currentColor; ctx.font = '24px monospace'; ctx.fillText(getValue(drawTextMatch[1]), getValue(drawTextMatch[2]), getValue(drawTextMatch[3])); ip++; continue; }
 
                     let moveTowardMatch = line.match(/^move (\w+) towards (\w+) by (\d+)$/);
                     if (moveTowardMatch) {
@@ -703,35 +721,21 @@ end program
         // --- SAVE / LOAD SYSTEM ---
         function saveCode() {
             localStorage.setItem('eSharpSavedCode', editor.value);
-            
             const saveBtn = event.target;
             const originalText = saveBtn.innerText;
-            saveBtn.innerText = "✅ Saved!";
-            saveBtn.style.background = "#238636";
-            setTimeout(() => {
-                saveBtn.innerText = originalText;
-                saveBtn.style.background = "#444";
-            }, 1000);
+            saveBtn.innerText = "✅ Saved!"; saveBtn.style.background = "#238636";
+            setTimeout(() => { saveBtn.innerText = originalText; saveBtn.style.background = "#444"; }, 1000);
         }
 
         function loadCode() {
             const savedCode = localStorage.getItem('eSharpSavedCode');
-            if (savedCode) {
-                editor.value = savedCode;
-                updateLineNumbers();
-                checkSyntax();
-            } else {
-                alert("No saved code found in your browser!");
-            }
+            if (savedCode) { editor.value = savedCode; updateLineNumbers(); checkSyntax(); } 
+            else { alert("No saved code found in your browser!"); }
         }
 
         window.onload = () => {
             const savedCode = localStorage.getItem('eSharpSavedCode');
-            if (savedCode) {
-                editor.value = savedCode;
-                updateLineNumbers();
-                checkSyntax();
-            }
+            if (savedCode) { editor.value = savedCode; updateLineNumbers(); checkSyntax(); }
         };
     </script>
 </body>
