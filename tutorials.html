@@ -56,6 +56,15 @@
             color: #888;
             margin-top: 25px;
         }
+        /* Add this right below your .image-placeholder CSS */
+        img {
+            max-width: 100%;       /* Prevents the image from breaking the 800px limit */
+            height: auto;          /* Keeps the aspect ratio from stretching */
+            border-radius: 8px;    /* Gives it those nice rounded corners to match the IDE */
+            border: 1px solid #444;/* Adds a subtle E# themed border */
+            display: block;
+            margin: 25px auto 0 auto; /* Centers the image and adds space above it */
+        }
     </style>
 </head>
 <body>
