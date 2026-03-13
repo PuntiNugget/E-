@@ -130,20 +130,25 @@
     <h3>Learning the UI</h3>
     
     <h4>The Code Editor</h4>
-    <p>Look at figure 1.1</p>
-    <div class="image-placholder">
-        <img src="https://github.com/PuntiNugget/E-/blob/main/Screenshot%202026-03-13%2011.09.11%20AM.png?raw=true" alt="Screenshot 2026-03-13 11.09.11 AM.png"/>
-    </div>
-    <p class="caption">Figure 1.1 - The code editor</p>
+    <p>Look at the left hand side</p>
     <p>This is the code editor. You've already interacted with it before! It's where you put in all of your code.</p>
     <p>Theres 3 parts to the editor. First we have the suggestion bar. The first bar you'll see when you look on the bottom is the suggestion bar. This is where simple keywords you want to code will show up. Then press "TAB" and you'll paste that keyword straight in!</p>
     <p>Next we have the syntax bar. This will show you anything, and everything that's wrong with you code. HOWEVER! There are such errors called runtime errors that won't show themselves unless you run the program. Sadly, due to being confined in a browser, we cannot add those to the syntax bar. Rather, we have to debug it ourselves</p>
 
     <h4>The Game Canvas</h4>
-    <p>Look at figure 1.2</p>
-    <div class="image-placholder">
-        <img src="https://github.com/PuntiNugget/E-/blob/main/Screenshot%202026-03-13%2011.09.44%20AM.png?raw=true" alt="Screenshot 2026-03-13 11.09.44 AM.png"/>
+    <p>Look at the top right corner</p>
+    <p>This is the game canvas.</p>
+    <p>We've also already explored this area of the engine. It is where all of your drawn output is</p>
+    <p>Key word here is drawn, just printing output will cause the program to put it in the terminal. Which is usually not what you want.</p>
+    <p>It's pretty simple to put a-- for example, emoji here.</p>
+    <p>You just want to write</p>
+    <div class="code-container">
+        <div class="code-header">
+            <span>Program.e#</span>
+            <span>E# Script</span>
+        </div>
+        <pre class="e-sharp-code"><code><span class="kw">set object</span> <span class="var">player</span> <span class="kw">to</span> <span class="str">"🟥"</span>
+    <span class="kw">draw object</span> <span class="var">player</span> <span class="kw">at</span> x <span class="var">185</span> y <span class="var">150</span></code></pre>
     </div>
-    <p class="caption">Figure 1.2 - The Canvas</p>
 </body>
 </html>
