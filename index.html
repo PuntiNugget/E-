@@ -95,48 +95,60 @@
             <div class="editor-wrapper">
                 <div id="line-numbers" class="line-numbers">1</div>
                 <textarea id="editor" spellcheck="false" wrap="off">
-print "Vector Math Online!"
+print "Spawners & Buttons Online!"
 
-create pixelart ship
-    ".......W"
-    "......WW"
-    ".....WW."
-    "....WW.."
-    ".Y.WW..."
-    "YYWW...."
-    "YYY....."
-    ".Y......"
+create pixelart bulletSprite
+    "........"
+    "........"
+    "..WWWW.."
+    ".WWWWWW."
+    "..WWWW.."
+    "........"
+    "........"
+    "........"
 end pixelart
 
-set object player to ship at x 50 y 50
-set player's scale to 2
+set object player to "🚀" at x 180 y 250
+set player's scale to 1.5
 
-// Creating a Vector2!
-set vector2 velocity to x 2 y 2
+// 1. Create a button and an empty object group!
+create button fireBtn text "FIRE!" at x 10 y 10 width 80 height 30
+create group bullets
 
 set boolean gameIsRunning to true
 
 while gameIsRunning is true
     clear canvas
     
-    // Add the vector directly to the object!
-    add velocity to player
+    // Draw our interactive UI
+    draw button fireBtn
     
-    // Math checks
-    add 2 to player's rotation
+    // 2. Check for button clicks to spawn!
+    if you clicked fireBtn
+        spawn using bulletSprite into bullets at x player's x y player's y
+    end if
     
-    // Bounce off walls simply
-    if player's x is greater than 350
-        multiply velocity's x by -1
+    if you pressed "space"
+        spawn using bulletSprite into bullets at x player's x y player's y
     end if
-    if player's x is less than 0
-        multiply velocity's x by -1
+    
+    // 3. Move EVERY bullet in the group
+    for each b in bullets
+        subtract 10 from b's y
+        draw object b
+        
+        // Destroy bullets that go off screen to save memory
+        if b's y is less than 0
+            remove b from bullets
+        end if
+    end for
+    
+    // Player controls
+    if you pressed "arrow right"
+        add 5 to player's x
     end if
-    if player's y is greater than 250
-        multiply velocity's y by -1
-    end if
-    if player's y is less than 0
-        multiply velocity's y by -1
+    if you pressed "arrow left"
+        subtract 5 from player's x
     end if
     
     draw object player
@@ -222,8 +234,9 @@ end program
         
         const engineKeywords = [
             "create", "tilemap", "pixelart", "function", "end", "set", "object", "number", "string", "boolean", "vector2",
-            "to", "at", "x", "y", "scale", "rotation", "clear", "canvas", "draw", "sprite", "text", "run", "if", "while", 
-            "is", "true", "false", "raycast", "from", "hits", "does", "not", "hit", "in", "move", 
+            "group", "spawn", "using", "into", "for", "each", "in", "remove", "from", "button", "text", "width", "height", "clicked",
+            "to", "at", "x", "y", "scale", "rotation", "clear", "canvas", "draw", "sprite", "run", "if", "while", 
+            "is", "true", "false", "raycast", "hits", "does", "not", "hit", "move", 
             "towards", "by", "wait", "milliseconds", "seconds", "you", "pressed", "touching", "tile",
             "print", "add", "subtract", "multiply", "divide", "color"
         ];
@@ -292,15 +305,10 @@ end program
 
         updateLineNumbers();
 
-        // --- MAP EDITOR ---
+        // --- MAP EDITOR & SPRITE EDITOR ---
         let currentTile = '🟩';
         const mapGrid = document.getElementById('map-grid');
-        function selectTile(emoji) {
-            currentTile = emoji;
-            document.querySelectorAll('.palette-btn').forEach(btn => btn.classList.remove('selected'));
-            event.target.classList.add('selected');
-        }
-
+        function selectTile(emoji) { currentTile = emoji; document.querySelectorAll('.palette-btn').forEach(btn => btn.classList.remove('selected')); event.target.classList.add('selected'); }
         let isDrawing = false;
         for (let i = 0; i < 13 * 8; i++) {
             let cell = document.createElement('div'); cell.className = 'grid-cell'; cell.innerText = '🟩';
@@ -309,58 +317,28 @@ end program
             mapGrid.appendChild(cell);
         }
         document.addEventListener('mouseup', () => { isDrawing = false; isSpriteDrawing = false; });
-
         function exportMap() {
-            let cells = document.querySelectorAll('.grid-cell');
-            let output = "create tilemap myLevel\n";
-            for(let r=0; r<8; r++) {
-                let rowStr = '    "';
-                for(let c=0; c<13; c++) { rowStr += cells[r * 13 + c].innerText; }
-                rowStr += '"\n'; output += rowStr;
-            }
-            output += "end tilemap";
-            navigator.clipboard.writeText(output);
-            alert("Map copied! Paste it into your code.");
+            let cells = document.querySelectorAll('.grid-cell'); let output = "create tilemap myLevel\n";
+            for(let r=0; r<8; r++) { let rowStr = '    "'; for(let c=0; c<13; c++) { rowStr += cells[r * 13 + c].innerText; } rowStr += '"\n'; output += rowStr; }
+            output += "end tilemap"; navigator.clipboard.writeText(output); alert("Map copied! Paste it into your code.");
         }
 
-        // --- SPRITE EDITOR ---
         let currentPixel = 'R';
-        const spriteGrid = document.getElementById('sprite-grid');
-        let spriteCells = [];
-        
-        function selectPixelColor(colorChar, btnElement) {
-            currentPixel = colorChar;
-            document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('selected'));
-            btnElement.classList.add('selected');
-        }
-
+        const spriteGrid = document.getElementById('sprite-grid'); let spriteCells = [];
+        function selectPixelColor(colorChar, btnElement) { currentPixel = colorChar; document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('selected')); btnElement.classList.add('selected'); }
         let isSpriteDrawing = false;
         const pColors = {'R':'#ff5e5e','G':'#238636','B':'#007fd4','Y':'#e3b341','W':'#ffffff','K':'#333','.':'transparent'};
-        
         for (let i = 0; i < 8 * 8; i++) {
-            let cell = document.createElement('div'); 
-            cell.className = 'sprite-cell'; cell.dataset.char = '.';
-            
-            function applyPixel(el) {
-                el.dataset.char = currentPixel;
-                el.style.backgroundColor = currentPixel === '.' ? 'transparent' : pColors[currentPixel];
-            }
-            
+            let cell = document.createElement('div'); cell.className = 'sprite-cell'; cell.dataset.char = '.';
+            function applyPixel(el) { el.dataset.char = currentPixel; el.style.backgroundColor = currentPixel === '.' ? 'transparent' : pColors[currentPixel]; }
             cell.addEventListener('mousedown', (e) => { isSpriteDrawing = true; applyPixel(e.target); });
             cell.addEventListener('mouseenter', (e) => { if (isSpriteDrawing) applyPixel(e.target); });
-            
             spriteCells.push(cell); spriteGrid.appendChild(cell);
         }
-
         function exportSprite() {
             let output = "create pixelart mySprite\n";
-            for(let r=0; r<8; r++) {
-                let rowStr = '    "';
-                for(let c=0; c<8; c++) { rowStr += spriteCells[r * 8 + c].dataset.char; }
-                rowStr += '"\n'; output += rowStr;
-            }
-            output += "end pixelart";
-            navigator.clipboard.writeText(output); alert("Sprite copied! Paste it into your code.");
+            for(let r=0; r<8; r++) { let rowStr = '    "'; for(let c=0; c<8; c++) { rowStr += spriteCells[r * 8 + c].dataset.char; } rowStr += '"\n'; output += rowStr; }
+            output += "end pixelart"; navigator.clipboard.writeText(output); alert("Sprite copied! Paste it into your code.");
         }
 
         // --- ENGINE ---
@@ -369,6 +347,18 @@ end program
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const activeKeys = new Set();
+        
+        let mouseX = 0, mouseY = 0, mouseJustPressed = false, mouseIsDown = false;
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+        canvas.addEventListener('mousedown', () => { 
+            if(!mouseIsDown) { mouseJustPressed = true; mouseIsDown = true; } 
+        });
+        canvas.addEventListener('mouseup', () => { mouseIsDown = false; });
         
         canvas.addEventListener('keydown', (e) => {
             let keyName = e.key.toLowerCase();
@@ -411,8 +401,17 @@ end program
                 else if (line.match(/^create tilemap (\w+)$/)) { customVariables.add(line.match(/^create tilemap (\w+)$/)[1]); inTilemap = true; isValidCommand = true; }
                 else if (line.match(/^create pixelart (\w+)$/)) { customVariables.add(line.match(/^create pixelart (\w+)$/)[1]); inPixelArt = true; isValidCommand = true; }
                 
-                else if (line.match(/^set vector2 (\w+) to x (.+) y (.+)$/)) { customVariables.add(line.match(/^set vector2 (\w+) to x (.+) y (.+)$/)[1]); isValidCommand = true; }
+                // --- NEW UI & GROUPS LINTER RULES ---
+                else if (line.match(/^create group (\w+)$/)) { customVariables.add(line.match(/^create group (\w+)$/)[1]); isValidCommand = true; }
+                else if (line.match(/^create button (\w+) text "([^"]+)" at x (.+) y (.+) width (.+) height (.+)$/)) { customVariables.add(line.match(/^create button (\w+)/)[1]); isValidCommand = true; }
+                else if (line.match(/^draw button (\w+)$/)) isValidCommand = true;
+                else if (line.match(/^if you clicked (\w+)$/)) isValidCommand = true;
+                else if (line.match(/^spawn using (\w+) into (\w+) at x (.+) y (.+)$/)) isValidCommand = true;
+                else if (line.match(/^for each (\w+) in (\w+)$/)) { customVariables.add(line.match(/^for each (\w+) in (\w+)$/)[1]); isValidCommand = true; }
+                else if (line === "end for") isValidCommand = true;
+                else if (line.match(/^remove (\w+) from (\w+)$/)) isValidCommand = true;
                 
+                else if (line.match(/^set vector2 (\w+) to x (.+) y (.+)$/)) { customVariables.add(line.match(/^set vector2 (\w+) to x (.+) y (.+)$/)[1]); isValidCommand = true; }
                 else if (line.match(/^draw tilemap (\w+) at x (.+) y (.+)$/)) isValidCommand = true;
                 else if (line.match(/^play sound "(.+)"$/)) isValidCommand = true;
                 else if (line.match(/^if (\w+) is touching tile "([^"]+)" in (\w+)$/)) isValidCommand = true;
@@ -437,10 +436,9 @@ end program
                     
                     else if (line.match(/^add (.+) to (\w+)$/)) isValidCommand = true;
                     else if (line.match(/^subtract (.+) from (\w+)$/)) isValidCommand = true;
-                    else if (line.match(/^multiply (.+) by (\w+)$/)) isValidCommand = true;
-                    else if (line.match(/^divide (.+) by (\w+)$/)) isValidCommand = true;
+                    else if (line.match(/^multiply (\w+) by (.+)$/)) isValidCommand = true;
+                    else if (line.match(/^divide (\w+) by (.+)$/)) isValidCommand = true;
                     
-                    // Transform math
                     else if (line.match(/^add (.+) to (\w+)'s (x|y|scale|rotation)$/)) isValidCommand = true;
                     else if (line.match(/^subtract (.+) from (\w+)'s (x|y|scale|rotation)$/)) isValidCommand = true;
                     else if (line.match(/^multiply (\w+)'s (x|y|scale|rotation) by (.+)$/)) isValidCommand = true;
@@ -475,14 +473,14 @@ end program
         async function startExecution() {
             const runBtn = document.getElementById('runBtn');
             runBtn.disabled = true; runBtn.innerText = "Running...";
-            ctx.clearRect(0, 0, canvas.width, canvas.height); activeKeys.clear(); canvas.focus(); isRunning = true;
+            ctx.clearRect(0, 0, canvas.width, canvas.height); activeKeys.clear(); canvas.focus(); isRunning = true; mouseJustPressed = false;
             await runESharp();
             runBtn.disabled = false; runBtn.innerText = "Run Program"; isRunning = false;
         }
 
         async function runESharp() {
             const code = document.getElementById('editor').value; const consoleOut = document.getElementById('console'); consoleOut.innerHTML = '';
-            let variables = {}; let lines = code.split('\n'); let ip = 0; let functions = {}; let callStack = []; let currentColor = '#ffffff';
+            let variables = {}; let lines = code.split('\n'); let ip = 0; let functions = {}; let callStack = []; let forStacks = []; let currentColor = '#ffffff';
 
             for(let j=0; j<lines.length; j++) {
                 let funcMatch = lines[j].trim().match(/^create function (\w+)$/);
@@ -507,7 +505,7 @@ end program
                 if (valStr.endsWith("'s rotation")) { let obj = valStr.replace("'s rotation", ""); return variables[obj].rotation; }
 
                 if (variables[valStr] !== undefined) {
-                    if (['pixelart', 'object', 'vector2'].includes(variables[valStr].type)) return variables[valStr];
+                    if (['pixelart', 'object', 'vector2', 'button'].includes(variables[valStr].type)) return variables[valStr];
                     return variables[valStr].value;
                 }
                 throw new Error(`Unknown variable: '${valStr}'`);
@@ -519,6 +517,94 @@ end program
                 while (ip < lines.length && isRunning) {
                     let line = lines[ip].trim();
                     if (!line || line.startsWith('//')) { ip++; continue; }
+                    
+                    // --- GROUPS AND SPAWNING LOGIC ---
+                    let groupMatch = line.match(/^create group (\w+)$/);
+                    if (groupMatch) { variables[groupMatch[1]] = { type: 'group', items: [] }; ip++; continue; }
+
+                    let spawnMatch = line.match(/^spawn using (\w+) into (\w+) at x (.+) y (.+)$/);
+                    if (spawnMatch) {
+                        let spriteData = getValue(spawnMatch[1]);
+                        variables[spawnMatch[2]].items.push({
+                            type: 'object', sprite: spriteData,
+                            x: getValue(spawnMatch[3]), y: getValue(spawnMatch[4]),
+                            scale: 1, rotation: 0
+                        });
+                        ip++; continue;
+                    }
+
+                    let forEachMatch = line.match(/^for each (\w+) in (\w+)$/);
+                    if (forEachMatch) {
+                        let itemName = forEachMatch[1], groupName = forEachMatch[2], group = variables[groupName];
+                        if (!group || group.type !== 'group') throw new Error(`'${groupName}' is not a valid group.`);
+                        
+                        if (group.items.length === 0) {
+                            let depth = 1;
+                            while (depth > 0) { ip++; if (lines[ip].trim().startsWith("for each ")) depth++; if (lines[ip].trim() === "end for") depth--; }
+                            ip++; continue;
+                        }
+
+                        variables[itemName] = group.items[0];
+                        forStacks.push({ startIp: ip, itemName: itemName, groupName: groupName, index: 0 });
+                        ip++; continue;
+                    }
+
+                    if (line === "end for") {
+                        if (forStacks.length === 0) throw new Error("Mismatched 'end for'");
+                        let loop = forStacks[forStacks.length - 1];
+                        loop.index++;
+                        let group = variables[loop.groupName];
+                        if (loop.index < group.items.length) {
+                            variables[loop.itemName] = group.items[loop.index];
+                            ip = loop.startIp + 1;
+                            continue;
+                        } else {
+                            forStacks.pop(); ip++; continue;
+                        }
+                    }
+
+                    let removeMatch = line.match(/^remove (\w+) from (\w+)$/);
+                    if (removeMatch) {
+                        let itemName = removeMatch[1], groupName = removeMatch[2], group = variables[groupName];
+                        let idx = group.items.indexOf(variables[itemName]);
+                        if (idx > -1) {
+                            group.items.splice(idx, 1);
+                            if (forStacks.length > 0) {
+                                let currentLoop = forStacks[forStacks.length - 1];
+                                if (currentLoop.groupName === groupName && currentLoop.index >= idx) { currentLoop.index--; }
+                            }
+                        }
+                        ip++; continue;
+                    }
+
+                    // --- UI BUTTON LOGIC ---
+                    let createBtnMatch = line.match(/^create button (\w+) text "([^"]+)" at x (.+) y (.+) width (.+) height (.+)$/);
+                    if (createBtnMatch) {
+                        variables[createBtnMatch[1]] = {
+                            type: 'button', text: createBtnMatch[2],
+                            x: getValue(createBtnMatch[3]), y: getValue(createBtnMatch[4]),
+                            w: getValue(createBtnMatch[5]), h: getValue(createBtnMatch[6])
+                        };
+                        ip++; continue;
+                    }
+
+                    let drawBtnMatch = line.match(/^draw button (\w+)$/);
+                    if (drawBtnMatch) {
+                        let btn = variables[drawBtnMatch[1]];
+                        ctx.fillStyle = '#444'; ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
+                        ctx.strokeStyle = '#888'; ctx.lineWidth = 2; ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
+                        ctx.fillStyle = '#fff'; ctx.font = '16px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText(btn.text, btn.x + btn.w/2, btn.y + btn.h/2);
+                        ip++; continue;
+                    }
+
+                    let clickMatch = line.match(/^if you clicked (\w+)$/);
+                    if (clickMatch) {
+                        let btn = variables[clickMatch[1]];
+                        let isClicking = mouseJustPressed && (mouseX >= btn.x && mouseX <= btn.x + btn.w && mouseY >= btn.y && mouseY <= btn.y + btn.h);
+                        if (!isClicking) { let depth = 1; while (depth > 0) { ip++; if (lines[ip].trim().startsWith("if ")) depth++; if (lines[ip].trim() === "end if") depth--; } }
+                        ip++; continue;
+                    }
 
                     let colorMatch = line.match(/^set color to "([^"]+)"$/);
                     if (colorMatch) { currentColor = colorMatch[1]; ip++; continue; }
@@ -622,7 +708,7 @@ end program
                     }
                     
                     let drawTextMatch = line.match(/^draw text (.+) at x (.+) y (.+)$/);
-                    if (drawTextMatch) { ctx.fillStyle = currentColor; ctx.font = '24px monospace'; ctx.fillText(getValue(drawTextMatch[1]), getValue(drawTextMatch[2]), getValue(drawTextMatch[3])); ip++; continue; }
+                    if (drawTextMatch) { ctx.fillStyle = currentColor; ctx.font = '24px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(getValue(drawTextMatch[1]), getValue(drawTextMatch[2]), getValue(drawTextMatch[3])); ip++; continue; }
 
                     let moveTowardMatch = line.match(/^move (\w+) towards (\w+) by (\d+)$/);
                     if (moveTowardMatch) {
@@ -632,7 +718,6 @@ end program
                         ip++; continue;
                     }
 
-                    // --- UPDATED MATH LOGIC (Handles Vectors and Standard Additions) ---
                     let addMatch = line.match(/^add (.+) to (\w+)$/);
                     if (addMatch) {
                         let val = getValue(addMatch[1]); let target = variables[addMatch[2]];
@@ -667,7 +752,11 @@ end program
                     if (line === "end program") { print("--- Program Terminated ---", 'system'); return; }
 
                     let waitMsMatch = line.match(/^wait (\d+) milliseconds?$/);
-                    if (waitMsMatch) { await sleep(Number(waitMsMatch[1])); ip++; continue; }
+                    if (waitMsMatch) { 
+                        mouseJustPressed = false; // Consume mouse clicks before sleep to prevent lingering clicks
+                        await sleep(Number(waitMsMatch[1])); 
+                        ip++; continue; 
+                    }
 
                     let setMatch = line.match(/^set (number|string|boolean) (\w+) to (.+)$/);
                     if (setMatch) { variables[setMatch[2]] = { type: setMatch[1], value: getValue(setMatch[3]) }; ip++; continue; }
