@@ -3,85 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E# Official Documentation v1.5</title>
+    <title>E# Engine Documentation</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; background: #f4f4f9; color: #333; }
-        h1, h2, h3 { color: #d32f2f; border-bottom: 2px solid #ffcdcf; padding-bottom: 5px; }
-        .code-block { background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 8px; font-family: 'Courier New', Courier, monospace; overflow-x: auto; margin-bottom: 20px; }
-        .keyword { color: #ff79c6; font-weight: bold; }
-        .string { color: #f1fa8c; }
-        .comment { color: #6272a4; font-style: italic; }
-        ul { background: #fff; padding: 20px 40px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        li { margin-bottom: 10px; }
-        .new-badge { background: #238636; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; vertical-align: middle; margin-left: 10px; font-weight: bold; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #1e1e1e; color: #d4d4d4; line-height: 1.6; padding: 40px; max-width: 900px; margin: 0 auto; }
+        h1 { color: #ff5e5e; border-bottom: 2px solid #333; padding-bottom: 10px; font-size: 2.5em; }
+        h2 { color: #fff; margin-top: 40px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; background: #2d2d2d; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        th, td { border: 1px solid #444; padding: 12px; text-align: left; }
+        th { background-color: #3c3c3c; color: #ff5e5e; font-weight: bold; }
+        code { background: #111; padding: 4px 6px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; color: #a5d6ff; font-size: 0.9em; }
+        .pro-tip { background: #04395e; border-left: 4px solid #007fd4; padding: 15px; margin-top: 30px; border-radius: 0 8px 8px 0; }
+        .pro-tip strong { color: #fff; }
     </style>
 </head>
 <body>
 
-    <h1>E# Language Documentation</h1>
-    <p>Welcome to the official documentation for E# v1.5! Below is a comprehensive list of all commands available in the engine.</p>
+    <h1>E# Engine: Documentation (v1.6)</h1>
+    <p>Welcome to the official E# documentation. Use this guide to look up commands, variable types, and game logic systems.</p>
 
-    <h2>1. Variables & Math <span class="new-badge">Updated!</span></h2>
-    <ul>
-        <li><code>set number score to 0</code> (Creates a number)</li>
-        <li><code>set string name to "Hero"</code> (Creates text)</li>
-        <li><code>set boolean isAlive to true</code> (Creates true/false)</li>
-        <li><code>set score to 10</code> (Updates an existing variable)</li>
-        <li><code>set number rand to random between 1 and 10</code></li>
-        <li><code>add 5 to score</code></li>
-        <li><code>subtract 2 from score</code></li>
-        <li><code>multiply score by 2</code> <span class="new-badge">New!</span></li>
-        <li><code>divide score by 2</code> <span class="new-badge">New!</span></li>
-    </ul>
+    <h2>1. Variables & Data Types</h2>
+    <table>
+        <tr><th>Command Syntax</th><th>Description</th><th>Example</th></tr>
+        <tr><td><code>set number [name] to [value]</code></td><td>Creates/updates a number.</td><td><code>set number score to 0</code></td></tr>
+        <tr><td><code>set string [name] to "[text]"</code></td><td>Creates/updates text.</td><td><code>set string msg to "Hello"</code></td></tr>
+        <tr><td><code>set boolean [name] to [true/false]</code></td><td>Creates/updates a true/false flag.</td><td><code>set boolean isJumping to false</code></td></tr>
+        <tr><td><code>set vector2 [name] to x [n] y [n]</code></td><td>Stores a 2D coordinate.</td><td><code>set vector2 spawnPoint to x 10 y 50</code></td></tr>
+        <tr><td><code>set [name] to [value]</code></td><td>Updates an existing variable.</td><td><code>set score to 100</code></td></tr>
+    </table>
 
-    <h2>2. Vector2 Math <span class="new-badge">New!</span></h2>
-    <ul>
-        <li><code>set vector2 velocity to x 5 y 10</code> (Creates a 2D vector)</li>
-        <li><code>add velocity to player</code> (Adds vector to object position)</li>
-        <li><code>subtract velocity from player</code></li>
-        <li><code>multiply velocity's x by -1</code> (Modify vector directly)</li>
-    </ul>
+    <h2>2. Math & Logic</h2>
+    <table>
+        <tr><th>Command Syntax</th><th>Description</th><th>Example</th></tr>
+        <tr><td><code>add [val] to [var]</code></td><td>Addition.</td><td><code>add 1 to score</code></td></tr>
+        <tr><td><code>subtract [val] from [var]</code></td><td>Subtraction.</td><td><code>subtract 5 from player's x</code></td></tr>
+        <tr><td><code>multiply [var] by [val]</code></td><td>Multiplication.</td><td><code>multiply player's scale by 2</code></td></tr>
+        <tr><td><code>divide [var] by [val]</code></td><td>Division.</td><td><code>divide speed by 2</code></td></tr>
+        <tr><td><code>combine [str1] and [str2] into [var]</code></td><td>Joins strings together.</td><td><code>combine "Score: " and score into uiText</code></td></tr>
+    </table>
 
-    <h2>3. Objects & Transforms <span class="new-badge">Updated!</span></h2>
-    <ul>
-        <li><code>set object player to "🚀" at x 100 y 150</code> (Spawns object)</li>
-        <li><code>set player's x to 200</code></li>
-        <li><code>set player's y to 50</code></li>
-        <li><code>set player's scale to 2</code> <span class="new-badge">New!</span></li>
-        <li><code>set player's rotation to 90</code> <span class="new-badge">New!</span></li>
-        <li><code>add 5 to player's rotation</code></li>
-        <li><code>move player towards enemy by 5</code> (Auto-chase mechanic)</li>
-    </ul>
+    <h2>3. Game Objects & Properties</h2>
+    <table>
+        <tr><th>Command Syntax</th><th>Description</th><th>Example</th></tr>
+        <tr><td><code>set object [name] to [sprite] at x [n] y [n]</code></td><td>Creates a game object.</td><td><code>set object player to "🚀" at x 100 y 100</code></td></tr>
+        <tr><td><code>set [name]'s [property] to [value]</code></td><td>Changes x, y, scale, or rotation.</td><td><code>set player's scale to 2.5</code></td></tr>
+        <tr><td><code>draw object [name]</code></td><td>Renders the object.</td><td><code>draw object player</code></td></tr>
+        <tr><td><code>move [obj1] towards [obj2] by [speed]</code></td><td>Moves toward a target.</td><td><code>move zombie towards player by 3</code></td></tr>
+    </table>
 
-    <h2>4. Pixel Art & Tilemaps <span class="new-badge">New!</span></h2>
-    <p>You can use the built-in IDE editors to generate code for Sprites and Tilemaps. 
-    Use `W` (White), `R` (Red), `B` (Blue), `G` (Green), `Y` (Yellow), `K` (Black), and `.` (Transparent).</p>
-    <div class="code-block">
-<span class="keyword">create pixelart</span> playerSprite
-    <span class="string">".RRRRRR."</span>
-    <span class="string">"RWWWWWWW"</span>
-    <span class="string">".RR..RR."</span>
-<span class="keyword">end pixelart</span>
+    <h2>4. Spawners & Groups</h2>
+    <table>
+        <tr><th>Command Syntax</th><th>Description</th><th>Example</th></tr>
+        <tr><td><code>create group [name]</code></td><td>Initializes an empty group.</td><td><code>create group lasers</code></td></tr>
+        <tr><td><code>spawn using [sprite] into [group] at x [n] y [n]</code></td><td>Clones a sprite into a group.</td><td><code>spawn using bulletSprite into lasers at x 50 y 50</code></td></tr>
+        <tr><td><code>for each [item] in [group]</code></td><td>Loops through every item.</td><td><code>for each laser in lasers</code></td></tr>
+        <tr><td><code>remove [item] from [group]</code></td><td>Destroys an object.</td><td><code>remove laser from lasers</code></td></tr>
+    </table>
 
-<span class="keyword">set object</span> player <span class="keyword">to</span> playerSprite <span class="keyword">at</span> x 100 y 100
+    <h2>5. Graphics & Assets</h2>
+    <table>
+        <tr><th>Command Syntax</th><th>Description</th><th>Example</th></tr>
+        <tr><td><code>clear canvas</code></td><td>Wipes the screen.</td><td><code>clear canvas</code></td></tr>
+        <tr><td><code>set color to "[hex]"</code></td><td>Changes drawing color.</td><td><code>set color to "#ff0000"</code></td></tr>
+        <tr><td><code>draw text [string] at x [n] y [n]</code></td><td>Draws text on screen.</td><td><code>draw text "Game Over" at x 10 y 10</code></td></tr>
+        <tr><td><code>draw tilemap [name] at x [n] y [n]</code></td><td>Renders a level map.</td><td><code>draw tilemap level1 at x 0 y 0</code></td></tr>
+    </table>
+
+    <h2>6. Input & UI Buttons</h2>
+    <table>
+        <tr><th>Command Syntax</th><th>Description</th><th>Example</th></tr>
+        <tr><td><code>if you pressed "[key]"</code></td><td>Checks keyboard input.</td><td><code>if you pressed "space"</code></td></tr>
+        <tr><td><code>create button [name] text "[txt]" at x [n] y [n] width [n] height [n]</code></td><td>Creates a UI button.</td><td><code>create button btn text "Play" at x 10 y 10 width 80 height 30</code></td></tr>
+        <tr><td><code>draw button [name]</code></td><td>Renders the button.</td><td><code>draw button btn</code></td></tr>
+        <tr><td><code>if you clicked [name]</code></td><td>Checks mouse click.</td><td><code>if you clicked btn</code></td></tr>
+    </table>
+
+    <h2>7. Collisions & Raycasting</h2>
+    <table>
+        <tr><th>Command Syntax</th><th>Description</th><th>Example</th></tr>
+        <tr><td><code>if [obj1] is touching [obj2]</code></td><td>Basic collision check.</td><td><code>if player is touching coin</code></td></tr>
+        <tr><td><code>if [obj] is touching tile "[char]" in [map]</code></td><td>Checks tilemap collision.</td><td><code>if player is touching tile "#" in level1</code></td></tr>
+        <tr><td><code>if raycast from [obj1] to [obj2] hits "[char]" in [map]</code></td><td>Line-of-sight check.</td><td><code>if raycast from enemy to player hits "#" in level1</code></td></tr>
+    </table>
+
+    <h2>8. Control Flow & Loops</h2>
+    <table>
+        <tr><th>Command Syntax</th><th>Description</th><th>Example</th></tr>
+        <tr><td><code>if [cond] is [val]</code> ... <code>end if</code></td><td>Conditional check.</td><td><code>if playerHealth is less than 1</code></td></tr>
+        <tr><td><code>while [cond] is [val]</code> ... <code>end while</code></td><td>Looping.</td><td><code>while gameRunning is true</code></td></tr>
+        <tr><td><code>wait [n] milliseconds</code></td><td>Pauses execution.</td><td><code>wait 16 milliseconds</code></td></tr>
+        <tr><td><code>create function [name]</code> ... <code>end function</code></td><td>Reusable code block.</td><td><code>create function playerMovement</code></td></tr>
+        <tr><td><code>run [function name]</code></td><td>Executes a function.</td><td><code>run playerMovement</code></td></tr>
+    </table>
+
+    <div class="pro-tip">
+        <strong>💡 Pro-Tips for E# Developers</strong>
+        <ul>
+            <li><strong>Frame Rates:</strong> Use <code>wait 16 milliseconds</code> at the end of your main <code>while</code> loop for ~60 FPS.</li>
+            <li><strong>Memory Management:</strong> Always use <code>remove [item] from [group]</code> when spawned objects leave the screen to prevent crashing.</li>
+            <li><strong>Layering:</strong> The engine draws in the order you write. To put the player on top, <code>draw object player</code> must come <i>after</i> <code>draw tilemap</code>.</li>
+        </ul>
     </div>
-
-    <h2>5. Input & Rendering</h2>
-    <ul>
-        <li><code>if you pressed "arrow right"</code></li>
-        <li><code>if you pressed "space"</code></li>
-        <li><code>clear canvas</code></li>
-        <li><code>draw object player</code></li>
-        <li><code>set color to "red"</code> (Changes text/drawing color)</li>
-        <li><code>draw text "Game Over" at x 150 y 150</code></li>
-    </ul>
-
-    <h2>6. Collisions & Physics</h2>
-    <ul>
-        <li><code>if player is touching enemy</code> (AABB Box collision)</li>
-        <li><code>if player is touching tile "🟥" in myLevel</code> (Tilemap collision)</li>
-        <li><code>if raycast from player to enemy hits "⬛" in myLevel</code> (Line-of-sight check)</li>
-    </ul>
 
 </body>
 </html>
